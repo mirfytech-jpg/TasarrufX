@@ -7,7 +7,6 @@ options:
   bundleIdPrefix: com.DEGISTIR          # <-- bundle ID'nin başını değiştir
   deploymentTarget:
     iOS: "17.0"
-  xcodeVersion: "15.0"
   createIntermediateGroups: true
   defaultConfig: Release
 

@@ -13,7 +13,7 @@ workflows:
         BUNDLE_ID: "com.mirfytech.TasarrufX"
         XCODE_SCHEME: "TasarrufX"
         APP_NAME: "TasarrufX"
-      xcode: latest
+      xcode: "16"
 
     triggering:
       events:
@@ -98,7 +98,7 @@ workflows:
       vars:
         BUNDLE_ID: "com.mirfytech.TasarrufX"
         XCODE_SCHEME: "TasarrufX"
-      xcode: latest
+      xcode: "16"
 
     scripts:
       - name: XcodeGen kur
