@@ -25,12 +25,17 @@ workflows:
     scripts:
       - name: İkon boyutlarını üret
         script: |
+          set -e
           ICON_DIR="Assets.xcassets/AppIcon.appiconset"
           SRC="$ICON_DIR/AppIcon-1024.png"
+          echo "Kaynak ikon: $SRC"
+          ls -la "$SRC"
           for SIZE in 40 58 60 80 87 120 180; do
-            sips -z $SIZE $SIZE "$SRC" --out "$ICON_DIR/AppIcon-${SIZE}.png" > /dev/null
+            sips -z $SIZE $SIZE "$SRC" --out "$ICON_DIR/AppIcon-${SIZE}.png"
+            echo "✓ AppIcon-${SIZE}.png üretildi"
           done
-          echo "İkon boyutları üretildi: $(ls $ICON_DIR/*.png)"
+          echo "Tüm ikonlar:"
+          ls -la $ICON_DIR/*.png
 
       - name: XcodeGen kur
         script: |
