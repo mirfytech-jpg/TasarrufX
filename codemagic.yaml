@@ -8,10 +8,7 @@ workflows:
 
     environment:
       groups:
-        - ios                                             # Codemagic'teki grup adı
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.mirfytech.TasarrufX
+        - ios
       vars:
         BUNDLE_ID: "com.mirfytech.TasarrufX"
         XCODE_SCHEME: "TasarrufX"
@@ -34,18 +31,18 @@ workflows:
         script: |
           xcodegen generate --spec project.yml
 
-      - name: Kod imzalama dosyalarını indir
+      - name: Keychain başlat
+        script: |
+          keychain initialize
+
+      - name: Sertifika ve profil oluştur (yoksa otomatik yarat)
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --platform IOS \
             --type IOS_APP_STORE \
             --create
 
-      - name: Keychain başlat
-        script: |
-          keychain initialize
-
-      - name: Sertifikaları ekle
+      - name: Sertifikaları keychain'e ekle
         script: |
           keychain add-certificates
 
@@ -89,9 +86,6 @@ workflows:
     environment:
       groups:
         - ios
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.mirfytech.TasarrufX
       vars:
         BUNDLE_ID: "com.mirfytech.TasarrufX"
         XCODE_SCHEME: "TasarrufX"
@@ -106,18 +100,18 @@ workflows:
         script: |
           xcodegen generate --spec project.yml
 
-      - name: Kod imzalama dosyalarını indir
+      - name: Keychain başlat
+        script: |
+          keychain initialize
+
+      - name: Sertifika ve profil oluştur
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --platform IOS \
             --type IOS_APP_STORE \
             --create
 
-      - name: Keychain başlat
-        script: |
-          keychain initialize
-
-      - name: Sertifikaları ekle
+      - name: Sertifikaları keychain'e ekle
         script: |
           keychain add-certificates
 
