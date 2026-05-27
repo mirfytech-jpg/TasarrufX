@@ -50,6 +50,7 @@ targets:
       properties:
         CFBundleDisplayName: "TasarrufX"
         CFBundleName: "TasarrufX"
+        CFBundleIconName: "AppIcon"
         CFBundleIdentifier: "$(PRODUCT_BUNDLE_IDENTIFIER)"
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"

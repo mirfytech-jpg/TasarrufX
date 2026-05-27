@@ -23,19 +23,10 @@ workflows:
           include: true
 
     scripts:
-      - name: İkon boyutlarını üret
+      - name: İkon dosyasını kontrol et
         script: |
-          set -e
-          ICON_DIR="Assets.xcassets/AppIcon.appiconset"
-          SRC="$ICON_DIR/AppIcon-1024.png"
-          echo "Kaynak ikon: $SRC"
-          ls -la "$SRC"
-          for SIZE in 40 58 60 80 87 120 180; do
-            sips -z $SIZE $SIZE "$SRC" --out "$ICON_DIR/AppIcon-${SIZE}.png"
-            echo "✓ AppIcon-${SIZE}.png üretildi"
-          done
-          echo "Tüm ikonlar:"
-          ls -la $ICON_DIR/*.png
+          ls -la Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png
+          echo "✓ AppIcon-1024.png mevcut"
 
       - name: XcodeGen kur
         script: |
@@ -107,14 +98,6 @@ workflows:
       xcode: latest
 
     scripts:
-      - name: İkon boyutlarını üret
-        script: |
-          ICON_DIR="Assets.xcassets/AppIcon.appiconset"
-          SRC="$ICON_DIR/AppIcon-1024.png"
-          for SIZE in 40 58 60 80 87 120 180; do
-            sips -z $SIZE $SIZE "$SRC" --out "$ICON_DIR/AppIcon-${SIZE}.png" > /dev/null
-          done
-
       - name: XcodeGen kur
         script: |
           brew install xcodegen
