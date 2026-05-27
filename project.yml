@@ -76,3 +76,41 @@ targets:
         Release:
           SWIFT_OPTIMIZATION_LEVEL: "-O"
           DEBUG_INFORMATION_FORMAT: "dwarf-with-dsym"
+
+    # Build sürecinde çalışır — codesign'dan ÖNCE bundle içindeki plist ve ikonları düzeltir
+    postBuildScripts:
+      - name: "CFBundleIconName ve ikon bundle'a garantile"
+        script: |
+          APP="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app"
+          PLIST="${APP}/Info.plist"
+
+          echo "============================================"
+          echo "IKON DÜZELTME: $APP"
+          echo "============================================"
+
+          # 1. Bundle Info.plist'e CFBundleIconName ekle/güncelle
+          if [ -f "$PLIST" ]; then
+            /usr/libexec/PlistBuddy -c "Add :CFBundleIconName string AppIcon" "$PLIST" 2>/dev/null || \
+            /usr/libexec/PlistBuddy -c "Set :CFBundleIconName AppIcon" "$PLIST"
+            echo "CFBundleIconName = $(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconName' "$PLIST" 2>/dev/null)"
+          else
+            echo "HATA: Info.plist bulunamadi: $PLIST"
+          fi
+
+          # 2. 120x120 ikonu bundle kok dizinine kopyala (eski stil guvence)
+          SRC="${SRCROOT}/Assets.xcassets/AppIcon.appiconset/AppIcon-120.png"
+          DST="${APP}/AppIcon-60@2x.png"
+          if [ -f "$SRC" ]; then
+            cp "$SRC" "$DST"
+            echo "AppIcon-60@2x.png kopyalandi (120x120)"
+          else
+            echo "UYARI: Kaynak bulunamadi: $SRC"
+          fi
+
+          # 3. Mevcut durumu goster
+          echo "--- Bundle icerigi ---"
+          ls -la "$APP"/*.png 2>/dev/null || echo "(kol dizinde PNG yok)"
+          ls -la "$APP/Assets.car" 2>/dev/null && echo "Assets.car mevcut" || echo "Assets.car YOK"
+          echo "--- Info.plist icon anahtarlari ---"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleIconName" "$PLIST" 2>/dev/null || echo "CFBundleIconName yok"
+          echo "============================================"
