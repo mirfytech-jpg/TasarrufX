@@ -38,13 +38,11 @@ targets:
       - path: ViewModels
       - path: Views
 
-    # Kaynaklar (bundle'a eklenir)
+    # Kaynaklar (bundle'a kopyalanır)
     resources:
       - path: Resources/alintilar.json
       - path: Assets.xcassets
-
-    # Info.plist — Xcode otomatik oluşturur (GENERATE_INFOPLIST_FILE: YES)
-    # Tüm anahtarlar aşağıdaki INFOPLIST_KEY_* ayarlarından gelir
+      - path: AppIcon-60@2x.png     # 120x120 ikon — dogrudan bundle koke kopyalanir
 
     settings:
       base:
@@ -56,61 +54,11 @@ targets:
         DEVELOPMENT_TEAM: "$(DEVELOPMENT_TEAM)"
         SWIFT_OPTIMIZATION_LEVEL: "-Onone"
 
-        # Xcode'un Info.plist'i otomatik oluşturmasını sağla
-        GENERATE_INFOPLIST_FILE: "YES"
-
-        # Info.plist anahtarları — Xcode bunları doğrudan plist'e yazar
-        INFOPLIST_KEY_CFBundleDisplayName: TasarrufX
-        INFOPLIST_KEY_CFBundleIconName: AppIcon
-        INFOPLIST_KEY_LSRequiresIPhoneOS: "YES"
-        INFOPLIST_KEY_UILaunchScreen_UIColorName: ""
-        INFOPLIST_KEY_UILaunchScreen_UIImageName: ""
-        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
-        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: "YES"
-        INFOPLIST_KEY_NSUserNotificationsUsageDescription: "Günlük finansal motivasyon bildirimleri göndermek için kullanılır."
-        INFOPLIST_KEY_UIStatusBarStyle: UIStatusBarStyleDefault
-        INFOPLIST_KEY_UIViewControllerBasedStatusBarAppearance: "NO"
-        INFOPLIST_KEY_UIUserInterfaceStyle: Light
+        # Info.plist — repo'dan okunur, Xcode kendi olusturMAZ
+        GENERATE_INFOPLIST_FILE: "NO"
+        INFOPLIST_FILE: Info.plist
 
       configs:
         Release:
           SWIFT_OPTIMIZATION_LEVEL: "-O"
           DEBUG_INFORMATION_FORMAT: "dwarf-with-dsym"
-
-    # Build sürecinde çalışır — codesign'dan ÖNCE bundle içindeki plist ve ikonları düzeltir
-    postBuildScripts:
-      - name: "CFBundleIconName ve ikon bundle'a garantile"
-        script: |
-          APP="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app"
-          PLIST="${APP}/Info.plist"
-
-          echo "============================================"
-          echo "IKON DÜZELTME: $APP"
-          echo "============================================"
-
-          # 1. Bundle Info.plist'e CFBundleIconName ekle/güncelle
-          if [ -f "$PLIST" ]; then
-            /usr/libexec/PlistBuddy -c "Add :CFBundleIconName string AppIcon" "$PLIST" 2>/dev/null || \
-            /usr/libexec/PlistBuddy -c "Set :CFBundleIconName AppIcon" "$PLIST"
-            echo "CFBundleIconName = $(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconName' "$PLIST" 2>/dev/null)"
-          else
-            echo "HATA: Info.plist bulunamadi: $PLIST"
-          fi
-
-          # 2. 120x120 ikonu bundle kok dizinine kopyala (eski stil guvence)
-          SRC="${SRCROOT}/Assets.xcassets/AppIcon.appiconset/AppIcon-120.png"
-          DST="${APP}/AppIcon-60@2x.png"
-          if [ -f "$SRC" ]; then
-            cp "$SRC" "$DST"
-            echo "AppIcon-60@2x.png kopyalandi (120x120)"
-          else
-            echo "UYARI: Kaynak bulunamadi: $SRC"
-          fi
-
-          # 3. Mevcut durumu goster
-          echo "--- Bundle icerigi ---"
-          ls -la "$APP"/*.png 2>/dev/null || echo "(kol dizinde PNG yok)"
-          ls -la "$APP/Assets.car" 2>/dev/null && echo "Assets.car mevcut" || echo "Assets.car YOK"
-          echo "--- Info.plist icon anahtarlari ---"
-          /usr/libexec/PlistBuddy -c "Print :CFBundleIconName" "$PLIST" 2>/dev/null || echo "CFBundleIconName yok"
-          echo "============================================"
