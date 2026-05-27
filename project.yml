@@ -43,32 +43,8 @@ targets:
       - path: Resources/alintilar.json
       - path: Assets.xcassets
 
-    # Info.plist — XcodeGen otomatik oluşturur
-    info:
-      path: TasarrufX/Info.plist
-      properties:
-        CFBundleDisplayName: "TasarrufX"
-        CFBundleName: "TasarrufX"
-        CFBundleIconName: "AppIcon"
-        CFBundleIdentifier: "$(PRODUCT_BUNDLE_IDENTIFIER)"
-        CFBundleShortVersionString: "$(MARKETING_VERSION)"
-        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
-        LSRequiresIPhoneOS: true
-        UIDeviceFamily:
-          - 1                                   # 1=iPhone only, 2=iPad
-        UILaunchScreen:
-          UIColorName: ""
-          UIImageName: ""
-        UISupportedInterfaceOrientations:
-          - UIInterfaceOrientationPortrait
-        UIApplicationSceneManifest:
-          UIApplicationSupportsMultipleScenes: false
-          UISceneConfigurations: {}
-        NSUserNotificationsUsageDescription: >-
-          Günlük finansal motivasyon bildirimleri göndermek için kullanılır.
-        UIStatusBarStyle: UIStatusBarStyleDefault
-        UIViewControllerBasedStatusBarAppearance: false
-        UIUserInterfaceStyle: Light
+    # Info.plist — Xcode otomatik oluşturur (GENERATE_INFOPLIST_FILE: YES)
+    # Tüm anahtarlar aşağıdaki INFOPLIST_KEY_* ayarlarından gelir
 
     settings:
       base:
@@ -79,7 +55,23 @@ targets:
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: "$(DEVELOPMENT_TEAM)"
         SWIFT_OPTIMIZATION_LEVEL: "-Onone"
-        GENERATE_INFOPLIST_FILE: "NO"
+
+        # Xcode'un Info.plist'i otomatik oluşturmasını sağla
+        GENERATE_INFOPLIST_FILE: "YES"
+
+        # Info.plist anahtarları — Xcode bunları doğrudan plist'e yazar
+        INFOPLIST_KEY_CFBundleDisplayName: TasarrufX
+        INFOPLIST_KEY_CFBundleIconName: AppIcon
+        INFOPLIST_KEY_LSRequiresIPhoneOS: "YES"
+        INFOPLIST_KEY_UILaunchScreen_UIColorName: ""
+        INFOPLIST_KEY_UILaunchScreen_UIImageName: ""
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: "YES"
+        INFOPLIST_KEY_NSUserNotificationsUsageDescription: "Günlük finansal motivasyon bildirimleri göndermek için kullanılır."
+        INFOPLIST_KEY_UIStatusBarStyle: UIStatusBarStyleDefault
+        INFOPLIST_KEY_UIViewControllerBasedStatusBarAppearance: "NO"
+        INFOPLIST_KEY_UIUserInterfaceStyle: Light
+
       configs:
         Release:
           SWIFT_OPTIMIZATION_LEVEL: "-O"
