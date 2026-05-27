@@ -1,5 +1,6 @@
 import Foundation
 import CoreData
+import SwiftUI
 
 final class BütçeViewModel: ObservableObject {
     @Published var giderler: [CDGider] = []
