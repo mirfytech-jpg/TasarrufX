@@ -7,11 +7,13 @@ workflows:
     max_build_duration: 60
 
     environment:
+      groups:
+        - ios                                             # Codemagic'teki grup adı
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.DEGISTIR.TasarrufX   # <-- değiştir
+        bundle_identifier: com.mirfytech.TasarrufX
       vars:
-        BUNDLE_ID: "com.DEGISTIR.TasarrufX"         # <-- değiştir
+        BUNDLE_ID: "com.mirfytech.TasarrufX"
         XCODE_SCHEME: "TasarrufX"
         APP_NAME: "TasarrufX"
       xcode: latest
@@ -70,18 +72,12 @@ workflows:
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
 
     publishing:
-      email:
-        recipients:
-          - EMAILIN@BURAYA.COM                            # <-- değiştir
-        notify:
-          success: true
-          failure: true
       app_store_connect:
         api_key: $APP_STORE_CONNECT_PRIVATE_KEY
         key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
         issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: true
-        submit_to_app_store: false                        # TestFlight'tan onayla
+        submit_to_app_store: false
 
 
   # ── App Store'a gönder (production) ────────────────────────────────
@@ -91,11 +87,13 @@ workflows:
     max_build_duration: 60
 
     environment:
+      groups:
+        - ios
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.DEGISTIR.TasarrufX   # <-- değiştir
+        bundle_identifier: com.mirfytech.TasarrufX
       vars:
-        BUNDLE_ID: "com.DEGISTIR.TasarrufX"         # <-- değiştir
+        BUNDLE_ID: "com.mirfytech.TasarrufX"
         XCODE_SCHEME: "TasarrufX"
       xcode: latest
 
@@ -145,5 +143,5 @@ workflows:
         key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
         issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: true
-        submit_to_app_store: true                        # Doğrudan App Store'a gönder
-        release_type: MANUAL                              # Sen onaylayacaksın
+        submit_to_app_store: true
+        release_type: MANUAL
