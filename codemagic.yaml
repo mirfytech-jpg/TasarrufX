@@ -1,0 +1,149 @@
+workflows:
+
+  # ── TestFlight'a yükle (test aşaması) ──────────────────────────────
+  ios-testflight:
+    name: iOS → TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.DEGISTIR.TasarrufX   # <-- değiştir
+      vars:
+        BUNDLE_ID: "com.DEGISTIR.TasarrufX"         # <-- değiştir
+        XCODE_SCHEME: "TasarrufX"
+        APP_NAME: "TasarrufX"
+      xcode: latest
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+
+    scripts:
+      - name: XcodeGen kur
+        script: |
+          brew install xcodegen
+
+      - name: Xcode projesi oluştur
+        script: |
+          xcodegen generate --spec project.yml
+
+      - name: Kod imzalama dosyalarını indir
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --platform IOS \
+            --type IOS_APP_STORE \
+            --create
+
+      - name: Keychain başlat
+        script: |
+          keychain initialize
+
+      - name: Sertifikaları ekle
+        script: |
+          keychain add-certificates
+
+      - name: Xcode imzalama profilini ayarla
+        script: |
+          xcode-project use-profiles
+
+      - name: Build numarasını ayarla
+        script: |
+          BUILD_NUM=$(app-store-connect get-latest-testflight-build-number "$BUNDLE_ID" 2>/dev/null || echo "0")
+          NEXT=$((BUILD_NUM + 1))
+          agvtool new-version -all "$NEXT"
+
+      - name: Derle ve IPA oluştur
+        script: |
+          xcode-project build-ipa \
+            --project TasarrufX.xcodeproj \
+            --scheme "$XCODE_SCHEME" \
+            --config Release
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+    publishing:
+      email:
+        recipients:
+          - EMAILIN@BURAYA.COM                            # <-- değiştir
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true
+        submit_to_app_store: false                        # TestFlight'tan onayla
+
+
+  # ── App Store'a gönder (production) ────────────────────────────────
+  ios-app-store:
+    name: iOS → App Store
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.DEGISTIR.TasarrufX   # <-- değiştir
+      vars:
+        BUNDLE_ID: "com.DEGISTIR.TasarrufX"         # <-- değiştir
+        XCODE_SCHEME: "TasarrufX"
+      xcode: latest
+
+    scripts:
+      - name: XcodeGen kur
+        script: |
+          brew install xcodegen
+
+      - name: Xcode projesi oluştur
+        script: |
+          xcodegen generate --spec project.yml
+
+      - name: Kod imzalama dosyalarını indir
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --platform IOS \
+            --type IOS_APP_STORE \
+            --create
+
+      - name: Keychain başlat
+        script: |
+          keychain initialize
+
+      - name: Sertifikaları ekle
+        script: |
+          keychain add-certificates
+
+      - name: Xcode imzalama profilini ayarla
+        script: |
+          xcode-project use-profiles
+
+      - name: Derle ve IPA oluştur
+        script: |
+          xcode-project build-ipa \
+            --project TasarrufX.xcodeproj \
+            --scheme "$XCODE_SCHEME" \
+            --config Release
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true
+        submit_to_app_store: true                        # Doğrudan App Store'a gönder
+        release_type: MANUAL                              # Sen onaylayacaksın
