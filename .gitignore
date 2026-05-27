@@ -37,3 +37,8 @@ Thumbs.db
 
 # Codemagic environment
 .env
+
+# Private keys (never commit!)
+*.key
+*.p8
+*.p12
