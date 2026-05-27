@@ -23,10 +23,17 @@ workflows:
           include: true
 
     scripts:
-      - name: İkon dosyasını kontrol et
+      - name: İkon boyutlarını üret
         script: |
-          ls -la Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png
-          echo "✓ AppIcon-1024.png mevcut"
+          set -e
+          ICON_DIR="Assets.xcassets/AppIcon.appiconset"
+          SRC="$ICON_DIR/AppIcon-1024.png"
+          echo "Kaynak: $(ls -la $SRC)"
+          for SIZE in 40 58 60 80 87 120 180; do
+            sips -z $SIZE $SIZE "$SRC" --out "$ICON_DIR/AppIcon-${SIZE}.png"
+            echo "✓ ${SIZE}px üretildi"
+          done
+          ls -la $ICON_DIR/*.png
 
       - name: XcodeGen kur
         script: |
@@ -35,6 +42,14 @@ workflows:
       - name: Xcode projesi oluştur
         script: |
           xcodegen generate --spec project.yml
+
+      - name: Info.plist CFBundleIconName garantile
+        script: |
+          PLIST=$(find . -name "Info.plist" -not -path "*/.git/*" -not -path "*/DerivedData/*" | head -1)
+          echo "Bulunan Info.plist: $PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleIconName string AppIcon" "$PLIST" 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c "Set :CFBundleIconName AppIcon" "$PLIST"
+          echo "CFBundleIconName = $(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconName' $PLIST)"
 
       - name: Keychain başlat
         script: |

@@ -80,6 +80,7 @@ targets:
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: "$(DEVELOPMENT_TEAM)"
         SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+        GENERATE_INFOPLIST_FILE: "NO"
       configs:
         Release:
           SWIFT_OPTIMIZATION_LEVEL: "-O"
