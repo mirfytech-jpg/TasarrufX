@@ -1,5 +1,6 @@
 import SwiftUI
 import UserNotifications
+import CoreData
 
 struct AyarlarView: View {
     @AppStorage("bildirimAktif")       private var bildirimAktif = true

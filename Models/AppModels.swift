@@ -127,3 +127,8 @@ class CDHedef: NSManagedObject {
     @NSManaged var hedefTutar: Double
     @NSManaged var bitis: Date?
 }
+
+// MARK: - Identifiable Conformance
+extension CDVarlik: Identifiable {}
+extension CDGider: Identifiable {}
+extension CDHedef: Identifiable {}
