@@ -124,7 +124,7 @@ struct HomeView: View {
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(.secondary)
             }
-            Text(""\(alintilar.metin)"")
+            Text("\"\(alintilar.metin)\"")
                 .font(.system(size: 16, weight: .medium))
                 .foregroundStyle(.primary)
                 .lineSpacing(4)

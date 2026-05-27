@@ -25,7 +25,7 @@ final class NotificationManager {
 
         let icerik = UNMutableNotificationContent()
         icerik.title = "Günün Motivasyonu 💰"
-        icerik.body  = ""\(alintilar.metin)" — \(alintilar.yazar)"
+        icerik.body  = "\"\(alintilar.metin)\" — \(alintilar.yazar)"
         icerik.sound = .default
 
         var bilesen = DateComponents()
