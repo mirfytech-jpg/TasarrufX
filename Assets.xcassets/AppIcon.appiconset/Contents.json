@@ -6,6 +6,18 @@
       "size" : "1024x1024",
       "filename" : "AppIcon-1024.png",
       "scale" : "1x"
+    },
+    {
+      "idiom" : "iphone",
+      "size" : "1024x1024",
+      "filename" : "AppIcon-1024.png",
+      "scale" : "1x"
+    },
+    {
+      "idiom" : "ipad",
+      "size" : "1024x1024",
+      "filename" : "AppIcon-1024.png",
+      "scale" : "1x"
     }
   ],
   "info" : {
