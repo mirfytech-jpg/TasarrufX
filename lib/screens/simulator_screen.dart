@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../models/models.dart';
@@ -20,54 +21,25 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
   double _hesapla(int yil) {
     final r = _yillikFaiz / 100 / 12;
     final n = yil * 12.0;
-    final birikmisAnapara = _baslangic * _pow(1 + r, n);
+    final factor = pow(1 + r, n).toDouble();
+    final birikmisAnapara = _baslangic * factor;
     final birikmisKatki =
-        r > 0 ? _aylikKatki * (_pow(1 + r, n) - 1) / r : _aylikKatki * n;
+        r > 0 ? _aylikKatki * (factor - 1) / r : _aylikKatki * n;
     return birikmisAnapara + birikmisKatki;
   }
 
-  double _pow(double base, double exp) => base == 1 ? 1 : _powHelper(base, exp);
-  double _powHelper(double b, double e) {
-    if (e == 0) return 1;
-    return b * _powHelper(b, e - 1);
-  }
-
-  // Use dart:math pow for performance
-  double get _gelecekDeger => _hesaplaFast(_yilSayisi);
+  double get _gelecekDeger => _hesapla(_yilSayisi);
   double get _toplamYatirim => _baslangic + _aylikKatki * _yilSayisi * 12;
   double get _toplamGetiri => _gelecekDeger - _toplamYatirim;
   double get _buyumeOrani =>
       _toplamYatirim > 0 ? (_gelecekDeger / _toplamYatirim - 1) * 100 : 0;
-
-  double _hesaplaFast(int yil) {
-    final r = _yillikFaiz / 100 / 12;
-    final n = yil * 12.0;
-    final factor = _expPow(1 + r, n);
-    final birikmisAnapara = _baslangic * factor;
-    final birikmisKatki = r > 0 ? _aylikKatki * (factor - 1) / r : _aylikKatki * n;
-    return birikmisAnapara + birikmisKatki;
-  }
-
-  double _expPow(double base, double exp) {
-    // simple iterative for small exponents
-    if (exp == 0) return 1;
-    double result = 1;
-    double b = base;
-    int e = exp.toInt();
-    while (e > 0) {
-      if (e.isOdd) result *= b;
-      b *= b;
-      e >>= 1;
-    }
-    return result;
-  }
 
   List<BuyumeNoktasi> get _grafikVerileri {
     return List.generate(_yilSayisi + 1, (yil) {
       final yatirim = _baslangic + _aylikKatki * yil * 12;
       return BuyumeNoktasi(
         yil: yil,
-        toplam: _hesaplaFast(yil),
+        toplam: _hesapla(yil),
         yatirim: yatirim,
       );
     });
@@ -88,7 +60,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
         .map((h) {
           int? yil;
           for (int y = 1; y <= 100; y++) {
-            if (_hesaplaFast(y) >= h.$2) {
+            if (_hesapla(y) >= h.$2) {
               yil = y;
               break;
             }

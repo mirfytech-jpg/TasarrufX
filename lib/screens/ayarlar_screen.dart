@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/varlik_provider.dart';
 import '../providers/butce_provider.dart';
-import '../utils/notifications.dart';
+import '../providers/app_prefs_provider.dart';
 
 class AyarlarScreen extends StatefulWidget {
   const AyarlarScreen({super.key});
@@ -15,13 +15,12 @@ class AyarlarScreen extends StatefulWidget {
 class _AyarlarScreenState extends State<AyarlarScreen> {
   final _hedefAdCtrl = TextEditingController();
   final _hedefTutarCtrl = TextEditingController();
-  bool _bildirimAktif = false;
-  int _bildirimSaati = 9;
+  bool _textlerYuklendi = false;
 
   @override
   void initState() {
     super.initState();
-    _yukle();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _textleriYukle());
   }
 
   @override
@@ -31,56 +30,39 @@ class _AyarlarScreenState extends State<AyarlarScreen> {
     super.dispose();
   }
 
-  Future<void> _yukle() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _hedefAdCtrl.text = prefs.getString('hedef_ad') ?? '';
-      final tutar = prefs.getDouble('hedef_tutar') ?? 0;
-      _hedefTutarCtrl.text = tutar > 0 ? tutar.toStringAsFixed(0) : '';
-      _bildirimAktif = prefs.getBool('bildirim_aktif') ?? false;
-      _bildirimSaati = prefs.getInt('bildirim_saati') ?? 9;
-    });
+  /// Metin alanlarını AppPrefsProvider'dan bir kez doldur.
+  void _textleriYukle() {
+    if (!mounted || _textlerYuklendi) return;
+    _textlerYuklendi = true;
+    final prefs = context.read<AppPrefsProvider>();
+    final ad = prefs.hedefAdi == 'Mali Hedef' ? '' : prefs.hedefAdi;
+    _hedefAdCtrl.text = ad;
+    _hedefTutarCtrl.text =
+        prefs.hedefTutar > 0 ? prefs.hedefTutar.toStringAsFixed(0) : '';
   }
 
   Future<void> _hedefKaydet() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('hedef_ad', _hedefAdCtrl.text.trim());
+    final ad = _hedefAdCtrl.text.trim();
     final tutar = double.tryParse(_hedefTutarCtrl.text) ?? 0;
-    await prefs.setDouble('hedef_tutar', tutar);
-    if (mounted) {
+    await context.read<AppPrefsProvider>().hedefKaydet(ad: ad, tutar: tutar);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Hedef kaydedildi ✓')),
+    );
+  }
+
+  Future<void> _bildirimToggle(bool aktif) async {
+    final ok =
+        await context.read<AppPrefsProvider>().bildirimToggle(aktif);
+    if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Hedef kaydedildi ✓')),
+        const SnackBar(content: Text('Bildirim izni verilmedi.')),
       );
     }
   }
 
-  Future<void> _bildirimToggle(bool aktif) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (aktif) {
-      final izin = await NotificationManager.shared.izinIste();
-      if (!izin) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Bildirim izni verilmedi.')),
-          );
-        }
-        return;
-      }
-      await NotificationManager.shared.gunlukBildirimAyarla(_bildirimSaati);
-    } else {
-      await NotificationManager.shared.bildirimleriIptalEt();
-    }
-    setState(() => _bildirimAktif = aktif);
-    await prefs.setBool('bildirim_aktif', aktif);
-  }
-
   Future<void> _saatDegistir(int saat) async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() => _bildirimSaati = saat);
-    await prefs.setInt('bildirim_saati', saat);
-    if (_bildirimAktif) {
-      await NotificationManager.shared.gunlukBildirimAyarla(saat);
-    }
+    await context.read<AppPrefsProvider>().bildirimSaatiGuncelle(saat);
   }
 
   Future<void> _tumVerileriSil() async {
@@ -101,27 +83,32 @@ class _AyarlarScreenState extends State<AyarlarScreen> {
       ),
     );
     if (onay != true) return;
+    if (!mounted) return;
 
-    final prefs = await SharedPreferences.getInstance();
     await context.read<ButceProvider>().tumVerileriSil();
+    if (!mounted) return;
     await context.read<VarlikProvider>().yukle();
-    await prefs.remove('hedef_tutar');
-    await prefs.remove('hedef_ad');
+    if (!mounted) return;
+    await context.read<AppPrefsProvider>().sifirla();
+    if (!mounted) return;
 
     setState(() {
+      _textlerYuklendi = false;
       _hedefAdCtrl.clear();
       _hedefTutarCtrl.clear();
     });
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tüm veriler silindi.')),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Tüm veriler silindi.')),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final appPrefs = context.watch<AppPrefsProvider>();
+    final bildirimAktif = appPrefs.bildirimAktif;
+    final bildirimSaati = appPrefs.bildirimSaati;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF2F2F7),
       body: CustomScrollView(
@@ -204,10 +191,10 @@ class _AyarlarScreenState extends State<AyarlarScreen> {
                   child: Row(children: [
                     const Expanded(child: Text('Günlük Motivasyon',
                         style: TextStyle(fontSize: 15))),
-                    Switch(value: _bildirimAktif, onChanged: _bildirimToggle),
+                    Switch(value: bildirimAktif, onChanged: _bildirimToggle),
                   ]),
                 ),
-                if (_bildirimAktif) ...[
+                if (bildirimAktif) ...[
                   const Divider(height: 1, indent: 56),
                   _SettingsTile(
                     ikon: Icons.access_time_rounded,
@@ -219,17 +206,17 @@ class _AyarlarScreenState extends State<AyarlarScreen> {
                         Row(children: [
                           IconButton(
                             icon: const Icon(Icons.remove_circle_outline_rounded),
-                            onPressed: _bildirimSaati > 6
-                                ? () => _saatDegistir(_bildirimSaati - 1)
+                            onPressed: bildirimSaati > 6
+                                ? () => _saatDegistir(bildirimSaati - 1)
                                 : null,
                           ),
-                          Text('$_bildirimSaati:00',
+                          Text('$bildirimSaati:00',
                               style: const TextStyle(
                                   fontSize: 15, fontWeight: FontWeight.w600)),
                           IconButton(
                             icon: const Icon(Icons.add_circle_outline_rounded),
-                            onPressed: _bildirimSaati < 22
-                                ? () => _saatDegistir(_bildirimSaati + 1)
+                            onPressed: bildirimSaati < 22
+                                ? () => _saatDegistir(bildirimSaati + 1)
                                 : null,
                           ),
                         ]),

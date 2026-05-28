@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
 import '../providers/varlik_provider.dart';
 import '../providers/butce_provider.dart';
+import '../providers/app_prefs_provider.dart';
 import '../utils/formatters.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -17,18 +17,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   AlintıModel? _alintilar;
-  double _hedefTutar = 0;
-  String _hedefAdi = 'Mali Hedef';
 
   @override
   void initState() {
     super.initState();
-    _yukle();
-  }
-
-  Future<void> _yukle() async {
-    await _alintiYukle();
-    await _hedefYukle();
+    _alintiYukle();
   }
 
   Future<void> _alintiYukle() async {
@@ -37,19 +30,11 @@ class _HomeScreenState extends State<HomeScreen> {
       final liste = (jsonDecode(data) as List)
           .map((j) => AlintıModel.fromJson(j as Map<String, dynamic>))
           .toList();
-      if (liste.isNotEmpty) {
+      if (liste.isNotEmpty && mounted) {
         final gun = DateTime.now().dayOfYear;
         setState(() => _alintilar = liste[(gun - 1) % liste.length]);
       }
     } catch (_) {}
-  }
-
-  Future<void> _hedefYukle() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _hedefTutar = prefs.getDouble('hedef_tutar') ?? 0;
-      _hedefAdi = prefs.getString('hedef_ad') ?? 'Mali Hedef';
-    });
   }
 
   String get _selamlama {
@@ -72,8 +57,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final varlikVM = context.watch<VarlikProvider>();
     final butceVM = context.watch<ButceProvider>();
+    final appPrefs = context.watch<AppPrefsProvider>();
     final netDeger = varlikVM.toplamDeger;
-    final ilerleme = _hedefTutar > 0 ? (netDeger / _hedefTutar).clamp(0.0, 1.0) : 0.0;
+    final hedefTutar = appPrefs.hedefTutar;
+    final hedefAdi = appPrefs.hedefAdi;
+    final ilerleme = hedefTutar > 0 ? (netDeger / hedefTutar).clamp(0.0, 1.0) : 0.0;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF2F2F7),
@@ -183,7 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
 
                 // Hedef İlerlemesi
-                if (_hedefTutar > 0) ...[
+                if (hedefTutar > 0) ...[
                   const SizedBox(height: 16),
                   _AppCard(
                     child: Padding(
@@ -191,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(_hedefAdi,
+                          Text(hedefAdi,
                               style: const TextStyle(
                                   fontSize: 17, fontWeight: FontWeight.w600)),
                           const SizedBox(height: 14),
@@ -216,7 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               Text('%${(ilerleme * 100).toInt()}',
                                   style: const TextStyle(
                                       fontSize: 13, color: Color(0xFF8E8E93))),
-                              Text(TLFormatter.compact(_hedefTutar),
+                              Text(TLFormatter.compact(hedefTutar),
                                   style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,

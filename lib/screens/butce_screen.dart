@@ -14,21 +14,41 @@ class ButceScreen extends StatefulWidget {
 class _ButceScreenState extends State<ButceScreen> {
   late final TextEditingController _gelirCtrl;
   final _gelirFocus = FocusNode();
+  ButceProvider? _butceVM;
 
   @override
   void initState() {
     super.initState();
     _gelirCtrl = TextEditingController();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final vm = context.read<ButceProvider>();
-      if (vm.aylikGelir > 0) {
-        _gelirCtrl.text = vm.aylikGelir.toStringAsFixed(0);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Yalnızca ilk çağrıda: listener ekle ve controller'ı doldur.
+    if (_butceVM == null) {
+      _butceVM = context.read<ButceProvider>();
+      if (_butceVM!.aylikGelir > 0) {
+        _gelirCtrl.text = _butceVM!.aylikGelir.toStringAsFixed(0);
       }
-    });
+      _butceVM!.addListener(_gelirSync);
+    }
+  }
+
+  /// ButceProvider değiştiğinde controller'ı senkronize eder.
+  /// Yalnızca gelir dışarıdan sıfırlandığında (tüm verileri sil) devreye girer.
+  void _gelirSync() {
+    if (!mounted) return;
+    final gelir = _butceVM!.aylikGelir;
+    final controllerGelir = double.tryParse(_gelirCtrl.text) ?? 0;
+    if (gelir == 0 && controllerGelir != 0) {
+      _gelirCtrl.text = '';
+    }
   }
 
   @override
   void dispose() {
+    _butceVM?.removeListener(_gelirSync);
     _gelirCtrl.dispose();
     _gelirFocus.dispose();
     super.dispose();

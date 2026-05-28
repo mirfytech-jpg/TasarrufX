@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import 'providers/varlik_provider.dart';
 import 'providers/butce_provider.dart';
+import 'providers/app_prefs_provider.dart';
 import 'utils/notifications.dart';
 import 'screens/main_screen.dart';
 
@@ -15,6 +17,9 @@ void main() async {
 
   // Yalnızca dikey yön
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
+  // Türkçe sayı formatı için varsayılan locale
+  Intl.defaultLocale = 'tr_TR';
 
   // Zaman dilimi başlat
   tz.initializeTimeZones();
@@ -33,6 +38,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => VarlikProvider()),
         ChangeNotifierProvider(create: (_) => ButceProvider()),
+        ChangeNotifierProvider(create: (_) => AppPrefsProvider()),
       ],
       child: const TasarrufXApp(),
     ),
