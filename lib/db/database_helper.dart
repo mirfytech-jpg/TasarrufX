@@ -18,28 +18,39 @@ class DatabaseHelper {
     final path = join(await getDatabasesPath(), 'tasarruf_x.db');
     return openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
-        await db.execute('''
-          CREATE TABLE varliklar (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            ad TEXT NOT NULL,
-            kategori TEXT NOT NULL,
-            deger REAL NOT NULL,
-            not TEXT,
-            eklenmeTarihi TEXT NOT NULL
-          )
-        ''');
-        await db.execute('''
-          CREATE TABLE giderler (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            ad TEXT NOT NULL,
-            tutar REAL NOT NULL,
-            kategori TEXT NOT NULL
-          )
-        ''');
+        await _createTables(db);
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        // v1→v2: 'not' sütunu (SQLite anahtar kelimesi) 'aciklama' olarak yeniden adlandırıldı.
+        // En kolay yol: tabloları sil ve yeniden oluştur (fresh install'da zaten veri yok).
+        await db.execute('DROP TABLE IF EXISTS varliklar');
+        await db.execute('DROP TABLE IF EXISTS giderler');
+        await _createTables(db);
       },
     );
+  }
+
+  Future<void> _createTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE varliklar (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ad TEXT NOT NULL,
+        kategori TEXT NOT NULL,
+        deger REAL NOT NULL,
+        aciklama TEXT,
+        eklenmeTarihi TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE giderler (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ad TEXT NOT NULL,
+        tutar REAL NOT NULL,
+        kategori TEXT NOT NULL
+      )
+    ''');
   }
 
   // ─── Varlık CRUD ─────────────────────────────────────────────────────────

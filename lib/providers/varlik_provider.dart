@@ -37,9 +37,9 @@ class VarlikProvider extends ChangeNotifier {
     required String ad,
     required VarlikKategori kategori,
     required double deger,
-    String? not,
+    String? aciklama,
   }) async {
-    final v = Varlik(ad: ad, kategori: kategori, deger: deger, not: not);
+    final v = Varlik(ad: ad, kategori: kategori, deger: deger, aciklama: aciklama);
     await DatabaseHelper.instance.varlikEkle(v);
     await yukle();
   }

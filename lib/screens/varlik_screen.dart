@@ -264,8 +264,8 @@ class _KategoriBlok extends StatelessWidget {
                 ),
                 title: Text(v.ad,
                     style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-                subtitle: v.not != null && v.not!.isNotEmpty
-                    ? Text(v.not!,
+                subtitle: v.aciklama != null && v.aciklama!.isNotEmpty
+                    ? Text(v.aciklama!,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontSize: 12))
@@ -307,7 +307,7 @@ class _VarlikSheetState extends State<_VarlikSheet> {
     _adCtrl = TextEditingController(text: v?.ad ?? '');
     _degerCtrl = TextEditingController(
         text: v != null ? v.deger.toStringAsFixed(0) : '');
-    _notCtrl = TextEditingController(text: v?.not ?? '');
+    _notCtrl = TextEditingController(text: v?.aciklama ?? '');
     _kategori = v?.kategori ?? VarlikKategori.nakit;
   }
 
@@ -331,7 +331,7 @@ class _VarlikSheetState extends State<_VarlikSheet> {
         ad: ad,
         kategori: _kategori,
         deger: deger,
-        not: _notCtrl.text.trim().isEmpty ? null : _notCtrl.text.trim(),
+        aciklama: _notCtrl.text.trim().isEmpty ? null : _notCtrl.text.trim(),
         eklenmeTarihi: widget.duzenle!.eklenmeTarihi,
       ));
     } else {
@@ -339,7 +339,7 @@ class _VarlikSheetState extends State<_VarlikSheet> {
         ad: ad,
         kategori: _kategori,
         deger: deger,
-        not: _notCtrl.text.trim().isEmpty ? null : _notCtrl.text.trim(),
+        aciklama: _notCtrl.text.trim().isEmpty ? null : _notCtrl.text.trim(),
       );
     }
     Navigator.pop(context);

@@ -108,7 +108,7 @@ class Varlik {
   final String ad;
   final VarlikKategori kategori;
   final double deger;
-  final String? not;
+  final String? aciklama;   // 'not' SQLite reserved keyword — renamed
   final DateTime eklenmeTarihi;
 
   Varlik({
@@ -116,7 +116,7 @@ class Varlik {
     required this.ad,
     required this.kategori,
     required this.deger,
-    this.not,
+    this.aciklama,
     DateTime? eklenmeTarihi,
   }) : eklenmeTarihi = eklenmeTarihi ?? DateTime.now();
 
@@ -125,7 +125,7 @@ class Varlik {
     'ad': ad,
     'kategori': kategori.ad,
     'deger': deger,
-    'not': not,
+    'aciklama': aciklama,
     'eklenmeTarihi': eklenmeTarihi.toIso8601String(),
   };
 
@@ -134,7 +134,7 @@ class Varlik {
     ad: m['ad'] as String,
     kategori: VarlikKategori.fromString(m['kategori'] as String),
     deger: m['deger'] as double,
-    not: m['not'] as String?,
+    aciklama: m['aciklama'] as String?,
     eklenmeTarihi: DateTime.parse(m['eklenmeTarihi'] as String),
   );
 }
