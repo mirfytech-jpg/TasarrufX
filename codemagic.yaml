@@ -57,6 +57,51 @@ workflows:
           NEXT=$((BUILD_NUM + 1))
           agvtool new-version -all "$NEXT"
 
+      - name: Ikon boyutlarini olustur
+        script: |
+          ICON_SRC="Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png"
+          APPICONSET="Assets.xcassets/AppIcon.appiconset"
+
+          echo "=== Mevcut appiconset dosyalari ==="
+          ls -la "$APPICONSET/"
+
+          if [ ! -f "$ICON_SRC" ]; then
+            echo "HATA: $ICON_SRC bulunamadi! Build durduruluyor."
+            exit 1
+          fi
+
+          # Tum gereken iPhone ikon boyutlarini uretelim
+          sips -z 40  40  "$ICON_SRC" --out "$APPICONSET/AppIcon-40.png"
+          sips -z 58  58  "$ICON_SRC" --out "$APPICONSET/AppIcon-58.png"
+          sips -z 60  60  "$ICON_SRC" --out "$APPICONSET/AppIcon-60.png"
+          sips -z 80  80  "$ICON_SRC" --out "$APPICONSET/AppIcon-80.png"
+          sips -z 87  87  "$ICON_SRC" --out "$APPICONSET/AppIcon-87.png"
+          sips -z 120 120 "$ICON_SRC" --out "$APPICONSET/AppIcon-120.png"
+          sips -z 180 180 "$ICON_SRC" --out "$APPICONSET/AppIcon-180.png"
+
+          # Contents.json'i tum acik boyutlarla yeniden yaz
+          cat > "$APPICONSET/Contents.json" << 'CONTENTS_EOF'
+          {
+            "images": [
+              {"filename": "AppIcon-40.png",   "idiom": "iphone", "scale": "2x", "size": "20x20"},
+              {"filename": "AppIcon-60.png",   "idiom": "iphone", "scale": "3x", "size": "20x20"},
+              {"filename": "AppIcon-58.png",   "idiom": "iphone", "scale": "2x", "size": "29x29"},
+              {"filename": "AppIcon-87.png",   "idiom": "iphone", "scale": "3x", "size": "29x29"},
+              {"filename": "AppIcon-80.png",   "idiom": "iphone", "scale": "2x", "size": "40x40"},
+              {"filename": "AppIcon-120.png",  "idiom": "iphone", "scale": "3x", "size": "40x40"},
+              {"filename": "AppIcon-120.png",  "idiom": "iphone", "scale": "2x", "size": "60x60"},
+              {"filename": "AppIcon-180.png",  "idiom": "iphone", "scale": "3x", "size": "60x60"},
+              {"filename": "AppIcon-1024.png", "idiom": "ios-marketing", "scale": "1x", "size": "1024x1024"}
+            ],
+            "info": {"author": "xcode", "version": 1}
+          }
+          CONTENTS_EOF
+
+          echo "=== Guncellenmis Contents.json ==="
+          cat "$APPICONSET/Contents.json"
+          echo "=== Olusturulan dosyalar ==="
+          ls -la "$APPICONSET/"
+
       - name: Archive olustur
         script: |
           xcodebuild archive \
@@ -64,27 +109,35 @@ workflows:
             -scheme "$XCODE_SCHEME" \
             -configuration Release \
             -archivePath /tmp/TasarrufX.xcarchive \
-            -destination "generic/platform=iOS" \
-            | xcpretty --simple --no-utf 2>/dev/null || true
+            -destination "generic/platform=iOS"
+
+          echo "=== Archive kontrolu ==="
           ls -la /tmp/TasarrufX.xcarchive/Products/Applications/ || true
 
-      - name: Archive icindeki plist ve ikonu duzelt
+      - name: Archive icindeki plist'i duzelt
         script: |
           APP=$(find /tmp/TasarrufX.xcarchive/Products -name "*.app" | head -1)
-          echo "App: $APP"
+          echo "App bundle: $APP"
           PLIST="$APP/Info.plist"
 
-          echo "=== MEVCUT PLIST ==="
+          echo "=== MEVCUT INFO.PLIST ==="
           plutil -p "$PLIST"
 
+          # CFBundleIconName garantili olarak ekle veya guncelle
           /usr/libexec/PlistBuddy -c "Add :CFBundleIconName string AppIcon" "$PLIST" 2>/dev/null \
             || /usr/libexec/PlistBuddy -c "Set :CFBundleIconName AppIcon" "$PLIST"
 
-          cp Assets.xcassets/AppIcon.appiconset/AppIcon-120.png "$APP/AppIcon-60@2x.png"
+          # AppIcon-60@2x.png (120x120) bundle kokune de kopyala (ek guvenlik)
+          cp "Assets.xcassets/AppIcon.appiconset/AppIcon-120.png" "$APP/AppIcon-60@2x.png"
 
-          echo "=== DUZELTME SONRASI ==="
-          plutil -p "$PLIST" | grep -E "CFBundle|icon"
-          ls -la "$APP"/*.png || true
+          echo "=== DUZELTME SONRASI PLIST ==="
+          plutil -p "$PLIST" | grep -iE "CFBundle|icon"
+
+          echo "=== Bundle PNG dosyalari ==="
+          ls -la "$APP"/*.png 2>/dev/null || echo "(png yok)"
+
+          echo "=== Assets.car kontrolu ==="
+          ls -la "$APP/Assets.car" 2>/dev/null && echo "Assets.car MEVCUT" || echo "UYARI: Assets.car YOK!"
 
       - name: IPA export et (Xcode yeniden imzalar)
         script: |
@@ -103,11 +156,11 @@ workflows:
           done
 
           if [ -z "$PROFILE_NAME" ]; then
-            echo "Profile bulunamadi, ilk profili kullaniyorum..."
+            echo "TasarrufX profili bulunamadi, ilk profili kullaniyorum..."
             FIRST_PP=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision 2>/dev/null | head -1)
             security cms -D -i "$FIRST_PP" > /tmp/pp_check.plist 2>/dev/null || true
             PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" /tmp/pp_check.plist 2>/dev/null || echo "")
-            echo "Yedek profile: $PROFILE_NAME"
+            echo "Kullanilan profil: $PROFILE_NAME"
           fi
 
           cat > /tmp/ExportOptions.plist << EOF
@@ -130,7 +183,7 @@ workflows:
           </plist>
           EOF
 
-          echo "ExportOptions.plist:"
+          echo "=== ExportOptions.plist ==="
           cat /tmp/ExportOptions.plist
 
           xcodebuild -exportArchive \
@@ -138,7 +191,7 @@ workflows:
             -exportPath build/ios/ipa \
             -exportOptionsPlist /tmp/ExportOptions.plist
 
-          echo "=== EXPORTED IPA ==="
+          echo "=== Export edilen IPA ==="
           ls -la build/ios/ipa/
 
     artifacts:
@@ -193,6 +246,34 @@ workflows:
       - name: Xcode imzalama profilini ayarla
         script: xcode-project use-profiles
 
+      - name: Ikon boyutlarini olustur
+        script: |
+          ICON_SRC="Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png"
+          APPICONSET="Assets.xcassets/AppIcon.appiconset"
+          sips -z 40  40  "$ICON_SRC" --out "$APPICONSET/AppIcon-40.png"
+          sips -z 58  58  "$ICON_SRC" --out "$APPICONSET/AppIcon-58.png"
+          sips -z 60  60  "$ICON_SRC" --out "$APPICONSET/AppIcon-60.png"
+          sips -z 80  80  "$ICON_SRC" --out "$APPICONSET/AppIcon-80.png"
+          sips -z 87  87  "$ICON_SRC" --out "$APPICONSET/AppIcon-87.png"
+          sips -z 120 120 "$ICON_SRC" --out "$APPICONSET/AppIcon-120.png"
+          sips -z 180 180 "$ICON_SRC" --out "$APPICONSET/AppIcon-180.png"
+          cat > "$APPICONSET/Contents.json" << 'CONTENTS_EOF'
+          {
+            "images": [
+              {"filename": "AppIcon-40.png",   "idiom": "iphone", "scale": "2x", "size": "20x20"},
+              {"filename": "AppIcon-60.png",   "idiom": "iphone", "scale": "3x", "size": "20x20"},
+              {"filename": "AppIcon-58.png",   "idiom": "iphone", "scale": "2x", "size": "29x29"},
+              {"filename": "AppIcon-87.png",   "idiom": "iphone", "scale": "3x", "size": "29x29"},
+              {"filename": "AppIcon-80.png",   "idiom": "iphone", "scale": "2x", "size": "40x40"},
+              {"filename": "AppIcon-120.png",  "idiom": "iphone", "scale": "3x", "size": "40x40"},
+              {"filename": "AppIcon-120.png",  "idiom": "iphone", "scale": "2x", "size": "60x60"},
+              {"filename": "AppIcon-180.png",  "idiom": "iphone", "scale": "3x", "size": "60x60"},
+              {"filename": "AppIcon-1024.png", "idiom": "ios-marketing", "scale": "1x", "size": "1024x1024"}
+            ],
+            "info": {"author": "xcode", "version": 1}
+          }
+          CONTENTS_EOF
+
       - name: Archive olustur
         script: |
           xcodebuild archive \
@@ -213,7 +294,21 @@ workflows:
       - name: IPA export et
         script: |
           mkdir -p build/ios/ipa
-          cat > /tmp/ExportOptions.plist << 'EOPLIST'
+          PROFILE_NAME=""
+          for pp in ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision; do
+            security cms -D -i "$pp" > /tmp/pp_check.plist 2>/dev/null || continue
+            APPID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" /tmp/pp_check.plist 2>/dev/null || echo "")
+            if echo "$APPID" | grep -q "TasarrufX"; then
+              PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" /tmp/pp_check.plist 2>/dev/null || echo "")
+              break
+            fi
+          done
+          if [ -z "$PROFILE_NAME" ]; then
+            FIRST_PP=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision 2>/dev/null | head -1)
+            security cms -D -i "$FIRST_PP" > /tmp/pp_check.plist 2>/dev/null || true
+            PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" /tmp/pp_check.plist 2>/dev/null || echo "")
+          fi
+          cat > /tmp/ExportOptions.plist << EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
@@ -221,15 +316,22 @@ workflows:
             <key>method</key>
             <string>app-store-connect</string>
             <key>signingStyle</key>
-            <string>automatic</string>
+            <string>manual</string>
+            <key>signingCertificate</key>
+            <string>Apple Distribution</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.mirfytech.TasarrufX</key>
+              <string>${PROFILE_NAME}</string>
+            </dict>
           </dict>
           </plist>
-          EOPLIST
+          EOF
           xcodebuild -exportArchive \
             -archivePath /tmp/TasarrufX.xcarchive \
             -exportPath build/ios/ipa \
-            -exportOptionsPlist /tmp/ExportOptions.plist \
-            -allowProvisioningUpdates
+            -exportOptionsPlist /tmp/ExportOptions.plist
+          ls -la build/ios/ipa/
 
     artifacts:
       - build/ios/ipa/*.ipa
