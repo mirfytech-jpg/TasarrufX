@@ -43,14 +43,14 @@ workflows:
           cp /tmp/pubspec_backup.yaml pubspec.yaml
 
           # Bundle ID'yi duzelt.
-          # flutter create -> com.mirfytech.tasarruf_x (hepsi küçük harf)
-          # İstediğimiz -> com.mirfytech.TasarrufX
-          # Noktalari kaçırarak regex güvenli sed kullan.
-          sed -i '' \
-            's/com\.mirfytech\.tasarruf_x/com.mirfytech.TasarrufX/g' \
+          # flutter create project-name icindeki alt cizgiyi (underscore) bundle ID'de
+          # siliyor: tasarruf_x → tasarrufx  (iOS bundle ID'de _ gecersiz)
+          # Her iki olasi formu da degistir: tasarruf_x VE tasarrufx
+          sed -i '' -E \
+            's/com\.mirfytech\.tasarruf_?x/com.mirfytech.TasarrufX/g' \
             ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' \
-            's/com\.mirfytech\.tasarruf_x/com.mirfytech.TasarrufX/g' \
+          sed -i '' -E \
+            's/com\.mirfytech\.tasarruf_?x/com.mirfytech.TasarrufX/g' \
             ios/Runner/Info.plist 2>/dev/null || true
 
           echo "=== Bundle ID kontrolü ==="
@@ -129,11 +129,11 @@ workflows:
             --project-name tasarruf_x --ios-language swift --no-pub .
           rm -rf lib && cp -r /tmp/lib_backup lib
           cp /tmp/pubspec_backup.yaml pubspec.yaml
-          sed -i '' \
-            's/com\.mirfytech\.tasarruf_x/com.mirfytech.TasarrufX/g' \
+          sed -i '' -E \
+            's/com\.mirfytech\.tasarruf_?x/com.mirfytech.TasarrufX/g' \
             ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' \
-            's/com\.mirfytech\.tasarruf_x/com.mirfytech.TasarrufX/g' \
+          sed -i '' -E \
+            's/com\.mirfytech\.tasarruf_?x/com.mirfytech.TasarrufX/g' \
             ios/Runner/Info.plist 2>/dev/null || true
 
       - name: Keychain başlat
