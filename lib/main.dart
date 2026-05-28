@@ -6,6 +6,7 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/timezone.dart' as tz;
 
+import 'utils/ad_manager.dart';
 import 'providers/varlik_provider.dart';
 import 'providers/butce_provider.dart';
 import 'providers/app_prefs_provider.dart';
@@ -29,6 +30,9 @@ void main() async {
   } catch (_) {
     tz.setLocalLocation(tz.getLocation('Europe/Istanbul'));
   }
+
+  // AdMob başlat
+  await AdManager.init();
 
   // Bildirimleri başlat
   await NotificationManager.shared.init();

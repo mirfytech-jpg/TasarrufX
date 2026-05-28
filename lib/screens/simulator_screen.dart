@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../models/models.dart';
 import '../utils/formatters.dart';
+import '../utils/ad_manager.dart';
+import '../widgets/banner_ad_widget.dart';
 
 class SimulatorScreen extends StatefulWidget {
   const SimulatorScreen({super.key});
@@ -165,6 +167,11 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                     ]),
                   ]),
                 )),
+
+                const SizedBox(height: 16),
+
+                // Reklam Banner
+                BannerAdWidget(adUnitId: AdManager.bannerSimulatorId),
 
                 const SizedBox(height: 16),
 

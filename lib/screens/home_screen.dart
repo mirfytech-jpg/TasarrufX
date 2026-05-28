@@ -7,6 +7,8 @@ import '../providers/varlik_provider.dart';
 import '../providers/butce_provider.dart';
 import '../providers/app_prefs_provider.dart';
 import '../utils/formatters.dart';
+import '../utils/ad_manager.dart';
+import '../widgets/banner_ad_widget.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -218,6 +220,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
 
                 const SizedBox(height: 16),
+                // Reklam Banner
+                BannerAdWidget(adUnitId: AdManager.bannerAnaSayfaId),
+                const SizedBox(height: 8),
                 const Text(
                   'Bu uygulama yatırım tavsiyesi vermez. Tüm veriler yalnızca bilgi amaçlıdır.',
                   textAlign: TextAlign.center,

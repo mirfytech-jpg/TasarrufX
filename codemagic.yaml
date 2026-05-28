@@ -56,6 +56,18 @@ workflows:
           echo "=== Bundle ID kontrolü ==="
           grep "PRODUCT_BUNDLE_IDENTIFIER" ios/Runner.xcodeproj/project.pbxproj
 
+          # AdMob App ID ve App Tracking Transparency izni Info.plist'e ekle
+          /usr/libexec/PlistBuddy \
+            -c "Add :GADApplicationIdentifier string ca-app-pub-4055315573310307~8843002768" \
+            ios/Runner/Info.plist 2>/dev/null || \
+          /usr/libexec/PlistBuddy \
+            -c "Set :GADApplicationIdentifier ca-app-pub-4055315573310307~8843002768" \
+            ios/Runner/Info.plist
+          /usr/libexec/PlistBuddy \
+            -c "Add :NSUserTrackingUsageDescription string Reklam deneyimini kisisellestirebilmek icin kullanilir." \
+            ios/Runner/Info.plist 2>/dev/null || true
+          echo "GADApplicationIdentifier eklendi."
+
       - name: Keychain başlat
         script: keychain initialize
 
@@ -134,6 +146,15 @@ workflows:
             ios/Runner.xcodeproj/project.pbxproj
           sed -i '' -E \
             's/com\.mirfytech\.tasarruf_?x/com.mirfytech.TasarrufX/g' \
+            ios/Runner/Info.plist 2>/dev/null || true
+          /usr/libexec/PlistBuddy \
+            -c "Add :GADApplicationIdentifier string ca-app-pub-4055315573310307~8843002768" \
+            ios/Runner/Info.plist 2>/dev/null || \
+          /usr/libexec/PlistBuddy \
+            -c "Set :GADApplicationIdentifier ca-app-pub-4055315573310307~8843002768" \
+            ios/Runner/Info.plist
+          /usr/libexec/PlistBuddy \
+            -c "Add :NSUserTrackingUsageDescription string Reklam deneyimini kisisellestirebilmek icin kullanilir." \
             ios/Runner/Info.plist 2>/dev/null || true
 
       - name: Keychain başlat

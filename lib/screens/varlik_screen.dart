@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../models/models.dart';
 import '../providers/varlik_provider.dart';
 import '../utils/formatters.dart';
+import '../utils/ad_manager.dart';
 
 class VarlikScreen extends StatefulWidget {
   const VarlikScreen({super.key});
@@ -13,7 +15,57 @@ class VarlikScreen extends StatefulWidget {
 }
 
 class _VarlikScreenState extends State<VarlikScreen> {
+  InterstitialAd? _interstitialAd;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInterstitial();
+  }
+
+  @override
+  void dispose() {
+    _interstitialAd?.dispose();
+    super.dispose();
+  }
+
+  void _loadInterstitial() {
+    InterstitialAd.load(
+      adUnitId: AdManager.interstitialId,
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          _interstitialAd = ad;
+          _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+            onAdDismissedFullScreenContent: (ad) {
+              ad.dispose();
+              _interstitialAd = null;
+              _loadInterstitial();
+              if (mounted) _goesterSheet();
+            },
+            onAdFailedToShowFullScreenContent: (ad, _) {
+              ad.dispose();
+              _interstitialAd = null;
+              _loadInterstitial();
+              if (mounted) _goesterSheet();
+            },
+          );
+        },
+        onAdFailedToLoad: (_) => _interstitialAd = null,
+      ),
+    );
+  }
+
+  /// Sadece yeni varlık eklemede reklam göster; düzenlemede direkt aç.
   void _ekleSheet({Varlik? duzenle}) {
+    if (duzenle == null && _interstitialAd != null) {
+      _interstitialAd!.show();
+    } else {
+      _goesterSheet(duzenle: duzenle);
+    }
+  }
+
+  void _goesterSheet({Varlik? duzenle}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

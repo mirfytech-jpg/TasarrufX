@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../models/models.dart';
 import '../providers/butce_provider.dart';
 import '../utils/formatters.dart';
+import '../utils/ad_manager.dart';
 
 class ButceScreen extends StatefulWidget {
   const ButceScreen({super.key});
@@ -15,11 +17,13 @@ class _ButceScreenState extends State<ButceScreen> {
   late final TextEditingController _gelirCtrl;
   final _gelirFocus = FocusNode();
   ButceProvider? _butceVM;
+  InterstitialAd? _interstitialAd;
 
   @override
   void initState() {
     super.initState();
     _gelirCtrl = TextEditingController();
+    _loadInterstitial();
   }
 
   @override
@@ -51,10 +55,47 @@ class _ButceScreenState extends State<ButceScreen> {
     _butceVM?.removeListener(_gelirSync);
     _gelirCtrl.dispose();
     _gelirFocus.dispose();
+    _interstitialAd?.dispose();
     super.dispose();
   }
 
+  void _loadInterstitial() {
+    InterstitialAd.load(
+      adUnitId: AdManager.interstitialId,
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          _interstitialAd = ad;
+          _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+            onAdDismissedFullScreenContent: (ad) {
+              ad.dispose();
+              _interstitialAd = null;
+              _loadInterstitial();
+              if (mounted) _goesterGiderSheet();
+            },
+            onAdFailedToShowFullScreenContent: (ad, _) {
+              ad.dispose();
+              _interstitialAd = null;
+              _loadInterstitial();
+              if (mounted) _goesterGiderSheet();
+            },
+          );
+        },
+        onAdFailedToLoad: (_) => _interstitialAd = null,
+      ),
+    );
+  }
+
+  /// Sadece yeni gider eklemede reklam göster; düzenlemede direkt aç.
   void _giderEkleSheet({Gider? duzenle}) {
+    if (duzenle == null && _interstitialAd != null) {
+      _interstitialAd!.show();
+    } else {
+      _goesterGiderSheet(duzenle: duzenle);
+    }
+  }
+
+  void _goesterGiderSheet({Gider? duzenle}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
