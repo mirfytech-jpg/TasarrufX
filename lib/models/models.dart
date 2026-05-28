@@ -171,14 +171,14 @@ class Gider {
 
 // ─── Alıntı Modeli ────────────────────────────────────────────────────────────
 
-class AlintıModel {
+class AlintiModel {
   final int id;
   final String metin;
   final String yazar;
 
-  AlintıModel({required this.id, required this.metin, required this.yazar});
+  AlintiModel({required this.id, required this.metin, required this.yazar});
 
-  factory AlintıModel.fromJson(Map<String, dynamic> j) => AlintıModel(
+  factory AlintiModel.fromJson(Map<String, dynamic> j) => AlintiModel(
     id: j['id'] as int,
     metin: j['metin'] as String,
     yazar: j['yazar'] as String,
@@ -202,9 +202,9 @@ class BuyumeNoktasi {
 class KilometreTasi {
   final String etiket;
   final double tutar;
-  final int? ulasılanYil;
+  final int? ulasilanYil;
 
-  KilometreTasi({required this.etiket, required this.tutar, this.ulasılanYil});
+  KilometreTasi({required this.etiket, required this.tutar, this.ulasilanYil});
 
-  bool get ulasildi => ulasılanYil != null;
+  bool get ulasildi => ulasilanYil != null;
 }

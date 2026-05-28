@@ -65,7 +65,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
               break;
             }
           }
-          return KilometreTasi(etiket: h.$1, tutar: h.$2, ulasılanYil: yil);
+          return KilometreTasi(etiket: h.$1, tutar: h.$2, ulasilanYil: yil);
         })
         .toList()
       ..sort((a, b) => a.tutar.compareTo(b.tutar));
@@ -418,14 +418,14 @@ class _KilometreSatir extends StatelessWidget {
           Text(TLFormatter.format(tas.tutar),
               style: const TextStyle(fontSize: 13, color: Color(0xFF8E8E93))),
         ])),
-        if (tas.ulasılanYil != null)
+        if (tas.ulasilanYil != null)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: const Color(0xFFE8FBF0),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Text('${tas.ulasılanYil}. yıl',
+            child: Text('${tas.ulasilanYil}. yıl',
                 style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,

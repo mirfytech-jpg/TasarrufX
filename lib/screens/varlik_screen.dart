@@ -60,7 +60,7 @@ class _VarlikScreenState extends State<VarlikScreen> {
                           SizedBox(
                             height: 180,
                             child: PieChart(PieChartData(
-                              sections: vm.kategoriToplamları
+                              sections: vm.kategoriToplamlari
                                   .map((k) => PieChartSectionData(
                                         value: k.deger,
                                         color: k.kategori.renk,
@@ -83,7 +83,7 @@ class _VarlikScreenState extends State<VarlikScreen> {
                             spacing: 14,
                             runSpacing: 6,
                             alignment: WrapAlignment.center,
-                            children: vm.kategoriToplamları
+                            children: vm.kategoriToplamlari
                                 .map((k) => Row(mainAxisSize: MainAxisSize.min, children: [
                                       Container(
                                           width: 10,

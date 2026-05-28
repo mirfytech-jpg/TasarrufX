@@ -22,7 +22,7 @@ class VarlikProvider extends ChangeNotifier {
         return MapEntry(k, liste);
       }));
 
-  List<({VarlikKategori kategori, double deger})> get kategoriToplamları {
+  List<({VarlikKategori kategori, double deger})> get kategoriToplamlari {
     final sozluk = <VarlikKategori, double>{};
     for (final v in varliklar) {
       sozluk[v.kategori] = (sozluk[v.kategori] ?? 0) + v.deger;

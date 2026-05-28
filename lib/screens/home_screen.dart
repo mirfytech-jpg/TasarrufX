@@ -16,7 +16,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  AlintıModel? _alintilar;
+  AlintiModel? _alintilar;
 
   @override
   void initState() {
@@ -28,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final data = await rootBundle.loadString('Resources/alintilar.json');
       final liste = (jsonDecode(data) as List)
-          .map((j) => AlintıModel.fromJson(j as Map<String, dynamic>))
+          .map((j) => AlintiModel.fromJson(j as Map<String, dynamic>))
           .toList();
       if (liste.isNotEmpty && mounted) {
         final gun = DateTime.now().dayOfYear;
