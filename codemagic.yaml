@@ -31,20 +31,6 @@ workflows:
         script: |
           xcodegen generate --spec project.yml
 
-      - name: İkon ve asset kataloğunu doğrula
-        script: |
-          echo "=== AppIcon PNG dosyaları ==="
-          ls -la Assets.xcassets/AppIcon.appiconset/*.png
-          echo ""
-          echo "=== Contents.json ==="
-          cat Assets.xcassets/AppIcon.appiconset/Contents.json
-          echo ""
-          echo "=== ASSETCATALOG_COMPILER_APPICON_NAME build ayarı ==="
-          grep -r "AppIcon" TasarrufX.xcodeproj/project.pbxproj | grep ASSETCATALOG || echo "Ayar bulunamadı"
-          echo ""
-          echo "=== GENERATE_INFOPLIST_FILE build ayarı ==="
-          grep -r "GENERATE_INFOPLIST_FILE" TasarrufX.xcodeproj/project.pbxproj | head -5
-
       - name: Keychain başlat
         script: |
           keychain initialize
@@ -71,69 +57,63 @@ workflows:
           NEXT=$((BUILD_NUM + 1))
           agvtool new-version -all "$NEXT"
 
-      - name: Derle ve IPA oluştur
+      - name: Archive olustur
         script: |
-          xcode-project build-ipa \
-            --project TasarrufX.xcodeproj \
-            --scheme "$XCODE_SCHEME" \
-            --config Release
+          xcodebuild archive \
+            -project TasarrufX.xcodeproj \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Release \
+            -archivePath /tmp/TasarrufX.xcarchive \
+            -destination "generic/platform=iOS" \
+            | xcpretty --simple --no-utf 2>/dev/null || true
+          ls -la /tmp/TasarrufX.xcarchive/Products/Applications/ || true
 
-      - name: IPA duzelt — ikon + CFBundleIconName + yeniden imzala
+      - name: Archive icindeki plist ve ikonu duzelt
         script: |
-          set -e
-          PROJECT_DIR=$(pwd)
-
-          IPA=$(find build/ios/ipa -name "*.ipa" | head -1)
-          if [ -z "$IPA" ]; then echo "HATA: IPA bulunamadi"; exit 1; fi
-          echo "IPA: $IPA"
-
-          WORK="/tmp/ipafix"
-          rm -rf "$WORK" && mkdir -p "$WORK"
-          cp "$IPA" "$WORK/orig.ipa"
-          cd "$WORK" && unzip -q orig.ipa
-
-          APP=$(find Payload -maxdepth 1 -name "*.app" | head -1)
-          PLIST="$APP/Info.plist"
+          APP=$(find /tmp/TasarrufX.xcarchive/Products -name "*.app" | head -1)
           echo "App: $APP"
+          PLIST="$APP/Info.plist"
 
-          echo "--- Oncesi ---"
-          plutil -p "$PLIST" | grep -i "icon\|CFBundle" || echo "(icon anahtari yok)"
+          echo "=== MEVCUT PLIST ==="
+          plutil -p "$PLIST"
 
-          # 1. CFBundleIconName ekle / guncelle
           /usr/libexec/PlistBuddy -c "Add :CFBundleIconName string AppIcon" "$PLIST" 2>/dev/null \
             || /usr/libexec/PlistBuddy -c "Set :CFBundleIconName AppIcon" "$PLIST"
-          echo "CFBundleIconName = $(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconName' "$PLIST")"
 
-          # 2. 120x120 ikonu bundle kokune kopyala
-          cp "$PROJECT_DIR/Assets.xcassets/AppIcon.appiconset/AppIcon-120.png" \
-             "$APP/AppIcon-60@2x.png"
-          echo "AppIcon-60@2x.png eklendi (120x120)"
+          cp Assets.xcassets/AppIcon.appiconset/AppIcon-120.png "$APP/AppIcon-60@2x.png"
 
-          # 3. Sertifikay bul (Apple Distribution veya iPhone Distribution)
-          CERT=$(security find-identity -v -p codesigning \
-            | grep -E "Apple Distribution|iPhone Distribution" \
-            | head -1 | sed 's/.*"\(.*\)".*/\1/')
-          if [ -z "$CERT" ]; then
-            echo "HATA: Dagitim sertifikasi bulunamadi"
-            security find-identity -v -p codesigning
-            exit 1
-          fi
-          echo "Sertifika: $CERT"
+          echo "=== DUZELTME SONRASI ==="
+          plutil -p "$PLIST" | grep -E "CFBundle|icon"
+          ls -la "$APP"/*.png || true
 
-          # 4. Yeniden imzala (mevcut entitlements korunur)
-          codesign -f --sign "$CERT" \
-            --preserve-metadata=entitlements,resource-rules,requirements \
-            "$APP"
-          echo "Yeniden imzalandi"
+      - name: IPA export et (Xcode yeniden imzalar)
+        script: |
+          mkdir -p build/ios/ipa
 
-          # 5. Yeni IPA paketle ve eskisinin yerine koy
-          zip -qr fixed.ipa Payload/
-          cp fixed.ipa "$PROJECT_DIR/$IPA"
-          echo "IPA guncellendi: $PROJECT_DIR/$IPA"
+          cat > /tmp/ExportOptions.plist << 'EOPLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>signingStyle</key>
+            <string>automatic</string>
+            <key>destination</key>
+            <string>export</string>
+          </dict>
+          </plist>
+          EOPLIST
 
-          echo "--- Sonrasi ---"
-          plutil -p "$PLIST" | grep -i "icon\|CFBundle"
-          ls -la "$APP"/*.png 2>/dev/null || echo "(bundle kokunde PNG yok)"
+          xcodebuild -exportArchive \
+            -archivePath /tmp/TasarrufX.xcarchive \
+            -exportPath build/ios/ipa \
+            -exportOptionsPlist /tmp/ExportOptions.plist \
+            -allowProvisioningUpdates \
+            | xcpretty --simple --no-utf 2>/dev/null || true
+
+          echo "=== EXPORTED IPA ==="
+          ls -la build/ios/ipa/
 
     artifacts:
       - build/ios/ipa/*.ipa
@@ -165,16 +145,13 @@ workflows:
 
     scripts:
       - name: XcodeGen kur
-        script: |
-          brew install xcodegen
+        script: brew install xcodegen
 
       - name: Xcode projesi oluştur
-        script: |
-          xcodegen generate --spec project.yml
+        script: xcodegen generate --spec project.yml
 
       - name: Keychain başlat
-        script: |
-          keychain initialize
+        script: keychain initialize
 
       - name: Sertifika ve profil oluştur
         script: |
@@ -185,19 +162,48 @@ workflows:
             --create
 
       - name: Sertifikaları keychain'e ekle
-        script: |
-          keychain add-certificates
+        script: keychain add-certificates
 
       - name: Xcode imzalama profilini ayarla
-        script: |
-          xcode-project use-profiles
+        script: xcode-project use-profiles
 
-      - name: Derle ve IPA oluştur
+      - name: Archive olustur
         script: |
-          xcode-project build-ipa \
-            --project TasarrufX.xcodeproj \
-            --scheme "$XCODE_SCHEME" \
-            --config Release
+          xcodebuild archive \
+            -project TasarrufX.xcodeproj \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Release \
+            -archivePath /tmp/TasarrufX.xcarchive \
+            -destination "generic/platform=iOS"
+
+      - name: Archive icindeki plist ve ikonu duzelt
+        script: |
+          APP=$(find /tmp/TasarrufX.xcarchive/Products -name "*.app" | head -1)
+          PLIST="$APP/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleIconName string AppIcon" "$PLIST" 2>/dev/null \
+            || /usr/libexec/PlistBuddy -c "Set :CFBundleIconName AppIcon" "$PLIST"
+          cp Assets.xcassets/AppIcon.appiconset/AppIcon-120.png "$APP/AppIcon-60@2x.png"
+
+      - name: IPA export et
+        script: |
+          mkdir -p build/ios/ipa
+          cat > /tmp/ExportOptions.plist << 'EOPLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>signingStyle</key>
+            <string>automatic</string>
+          </dict>
+          </plist>
+          EOPLIST
+          xcodebuild -exportArchive \
+            -archivePath /tmp/TasarrufX.xcarchive \
+            -exportPath build/ios/ipa \
+            -exportOptionsPlist /tmp/ExportOptions.plist \
+            -allowProvisioningUpdates
 
     artifacts:
       - build/ios/ipa/*.ipa
