@@ -24,6 +24,9 @@ workflows:
     scripts:
       - name: Flutter iOS projesi olustur
         script: |
+          # SPM'i devre disi birak — google_mobile_ads henuz SPM desteklemiyor
+          flutter config --no-enable-swift-package-manager
+
           # Mevcut lib ve pubspec'i yedekle
           cp -r lib /tmp/lib_backup
           cp pubspec.yaml /tmp/pubspec_backup.yaml
@@ -142,6 +145,9 @@ workflows:
     scripts:
       - name: Flutter iOS projesi olustur
         script: |
+          # SPM'i devre disi birak — google_mobile_ads henuz SPM desteklemiyor
+          flutter config --no-enable-swift-package-manager
+
           cp -r lib /tmp/lib_backup
           cp pubspec.yaml /tmp/pubspec_backup.yaml
           flutter create --platforms ios --org com.mirfytech \
