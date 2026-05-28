@@ -78,26 +78,62 @@ workflows:
             --scheme "$XCODE_SCHEME" \
             --config Release
 
-      - name: IPA içindeki ikonları ve Info.plist'i kontrol et
+      - name: IPA duzelt — ikon + CFBundleIconName + yeniden imzala
         script: |
-          IPAFILE=$(find build/ios/ipa -name "*.ipa" 2>/dev/null | head -1)
-          if [ -z "$IPAFILE" ]; then
-            echo "IPA bulunamadı, build başarısız olmuş olabilir"
-            exit 0
+          set -e
+          PROJECT_DIR=$(pwd)
+
+          IPA=$(find build/ios/ipa -name "*.ipa" | head -1)
+          if [ -z "$IPA" ]; then echo "HATA: IPA bulunamadi"; exit 1; fi
+          echo "IPA: $IPA"
+
+          WORK="/tmp/ipafix"
+          rm -rf "$WORK" && mkdir -p "$WORK"
+          cp "$IPA" "$WORK/orig.ipa"
+          cd "$WORK" && unzip -q orig.ipa
+
+          APP=$(find Payload -maxdepth 1 -name "*.app" | head -1)
+          PLIST="$APP/Info.plist"
+          echo "App: $APP"
+
+          echo "--- Oncesi ---"
+          plutil -p "$PLIST" | grep -i "icon\|CFBundle" || echo "(icon anahtari yok)"
+
+          # 1. CFBundleIconName ekle / guncelle
+          /usr/libexec/PlistBuddy -c "Add :CFBundleIconName string AppIcon" "$PLIST" 2>/dev/null \
+            || /usr/libexec/PlistBuddy -c "Set :CFBundleIconName AppIcon" "$PLIST"
+          echo "CFBundleIconName = $(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconName' "$PLIST")"
+
+          # 2. 120x120 ikonu bundle kokune kopyala
+          cp "$PROJECT_DIR/Assets.xcassets/AppIcon.appiconset/AppIcon-120.png" \
+             "$APP/AppIcon-60@2x.png"
+          echo "AppIcon-60@2x.png eklendi (120x120)"
+
+          # 3. Sertifikay bul (Apple Distribution veya iPhone Distribution)
+          CERT=$(security find-identity -v -p codesigning \
+            | grep -E "Apple Distribution|iPhone Distribution" \
+            | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          if [ -z "$CERT" ]; then
+            echo "HATA: Dagitim sertifikasi bulunamadi"
+            security find-identity -v -p codesigning
+            exit 1
           fi
-          echo "IPA: $IPAFILE"
-          mkdir -p /tmp/ipa_check
-          cp "$IPAFILE" /tmp/ipa_check/app.ipa
-          cd /tmp/ipa_check && unzip -q app.ipa
-          echo ""
-          echo "=== Bundle kök PNG ikonlar ==="
-          ls -la Payload/*.app/*.png 2>/dev/null | grep -i icon || echo "(kök dizinde PNG ikon yok — normal, asset catalog kullanılıyor)"
-          echo ""
-          echo "=== Assets.car mevcut mu? ==="
-          ls -la Payload/*.app/Assets.car 2>/dev/null && echo "✓ Assets.car var" || echo "✗ Assets.car YOK — kritik hata"
-          echo ""
-          echo "=== Info.plist ikon anahtarları ==="
-          plutil -p Payload/*.app/Info.plist 2>/dev/null | grep -i "icon\|CFBundle" || echo "Anahtar bulunamadı"
+          echo "Sertifika: $CERT"
+
+          # 4. Yeniden imzala (mevcut entitlements korunur)
+          codesign -f --sign "$CERT" \
+            --preserve-metadata=entitlements,resource-rules,requirements \
+            "$APP"
+          echo "Yeniden imzalandi"
+
+          # 5. Yeni IPA paketle ve eskisinin yerine koy
+          zip -qr fixed.ipa Payload/
+          cp fixed.ipa "$PROJECT_DIR/$IPA"
+          echo "IPA guncellendi: $PROJECT_DIR/$IPA"
+
+          echo "--- Sonrasi ---"
+          plutil -p "$PLIST" | grep -i "icon\|CFBundle"
+          ls -la "$APP"/*.png 2>/dev/null || echo "(bundle kokunde PNG yok)"
 
     artifacts:
       - build/ios/ipa/*.ipa
