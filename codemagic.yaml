@@ -1,6 +1,6 @@
 workflows:
 
-  # ── TestFlight'a yükle (test aşaması) ──────────────────────────────
+  # ── TestFlight'a yükle ─────────────────────────────────────────────────────
   ios-testflight:
     name: iOS → TestFlight
     instance_type: mac_mini_m2
@@ -11,9 +11,8 @@ workflows:
         - ios
       vars:
         BUNDLE_ID: "com.mirfytech.TasarrufX"
-        XCODE_SCHEME: "TasarrufX"
-        APP_NAME: "TasarrufX"
-      xcode: "26"
+      flutter: stable
+      xcode: latest
 
     triggering:
       events:
@@ -23,19 +22,47 @@ workflows:
           include: true
 
     scripts:
-      - name: XcodeGen kur
+      - name: Flutter iOS projesi olustur
         script: |
-          brew install xcodegen
+          # Mevcut lib ve pubspec'i yedekle
+          cp -r lib /tmp/lib_backup
+          cp pubspec.yaml /tmp/pubspec_backup.yaml
 
-      - name: Xcode projesi oluştur
-        script: |
-          xcodegen generate --spec project.yml
+          # Flutter create ile iOS altyapisini olustur (ios/ klasörü)
+          flutter create \
+            --platforms ios \
+            --org com.mirfytech \
+            --project-name tasarruf_x \
+            --ios-language swift \
+            --no-pub \
+            .
+
+          # Kendi dosyalarimizi geri yukle
+          rm -rf lib
+          cp -r /tmp/lib_backup lib
+          cp /tmp/pubspec_backup.yaml pubspec.yaml
+
+          # Bundle ID'yi duzelt (flutter create kucuk harf oluşturur)
+          CREATED_ID=$(grep "PRODUCT_BUNDLE_IDENTIFIER" ios/Runner.xcodeproj/project.pbxproj \
+            | grep -v "Runner.tests\|TEST" \
+            | head -1 \
+            | grep -oE 'com\.[a-zA-Z0-9._-]+' | head -1)
+          echo "Flutter'in olusturduğu ID: $CREATED_ID"
+
+          if [ -n "$CREATED_ID" ] && [ "$CREATED_ID" != "com.mirfytech.TasarrufX" ]; then
+            sed -i '' "s/${CREATED_ID}/com.mirfytech.TasarrufX/g" \
+              ios/Runner.xcodeproj/project.pbxproj
+            sed -i '' "s/${CREATED_ID}/com.mirfytech.TasarrufX/g" \
+              ios/Runner/Info.plist 2>/dev/null || true
+          fi
+
+          echo "=== Bundle ID kontrolü ==="
+          grep "PRODUCT_BUNDLE_IDENTIFIER" ios/Runner.xcodeproj/project.pbxproj
 
       - name: Keychain başlat
-        script: |
-          keychain initialize
+        script: keychain initialize
 
-      - name: Sertifika ve profil oluştur (yoksa otomatik yarat)
+      - name: Sertifika ve profil olustur
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --platform IOS \
@@ -43,161 +70,35 @@ workflows:
             --certificate-key @env:CERTIFICATE_PRIVATE_KEY \
             --create
 
-      - name: Sertifikaları keychain'e ekle
-        script: |
-          keychain add-certificates
+      - name: Sertifikalari keychain'e ekle
+        script: keychain add-certificates
+
+      - name: Flutter pub get
+        script: flutter pub get
+
+      - name: Ikon olustur
+        script: dart run flutter_launcher_icons
 
       - name: Xcode imzalama profilini ayarla
-        script: |
-          xcode-project use-profiles
+        script: xcode-project use-profiles
 
-      - name: Build numarasını ayarla
+      - name: Build numarasini ayarla
         script: |
-          BUILD_NUM=$(app-store-connect get-latest-testflight-build-number "$BUNDLE_ID" 2>/dev/null || echo "0")
+          BUILD_NUM=$(app-store-connect get-latest-testflight-build-number \
+            "$BUNDLE_ID" 2>/dev/null || echo "0")
           NEXT=$((BUILD_NUM + 1))
-          agvtool new-version -all "$NEXT"
+          echo "Build numarasi: $NEXT"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $NEXT" \
+            ios/Runner/Info.plist 2>/dev/null || true
 
-      - name: Ikon boyutlarini olustur
+      - name: Flutter build IPA
         script: |
-          ICON_SRC="Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png"
-          APPICONSET="Assets.xcassets/AppIcon.appiconset"
-
-          echo "=== Mevcut appiconset dosyalari ==="
-          ls -la "$APPICONSET/"
-
-          if [ ! -f "$ICON_SRC" ]; then
-            echo "HATA: $ICON_SRC bulunamadi! Build durduruluyor."
-            exit 1
-          fi
-
-          # Tum gereken iPhone ikon boyutlarini uretelim
-          sips -z 40  40  "$ICON_SRC" --out "$APPICONSET/AppIcon-40.png"
-          sips -z 58  58  "$ICON_SRC" --out "$APPICONSET/AppIcon-58.png"
-          sips -z 60  60  "$ICON_SRC" --out "$APPICONSET/AppIcon-60.png"
-          sips -z 80  80  "$ICON_SRC" --out "$APPICONSET/AppIcon-80.png"
-          sips -z 87  87  "$ICON_SRC" --out "$APPICONSET/AppIcon-87.png"
-          sips -z 120 120 "$ICON_SRC" --out "$APPICONSET/AppIcon-120.png"
-          sips -z 180 180 "$ICON_SRC" --out "$APPICONSET/AppIcon-180.png"
-
-          # Contents.json'i tum acik boyutlarla yeniden yaz
-          cat > "$APPICONSET/Contents.json" << 'CONTENTS_EOF'
-          {
-            "images": [
-              {"filename": "AppIcon-40.png",   "idiom": "iphone", "scale": "2x", "size": "20x20"},
-              {"filename": "AppIcon-60.png",   "idiom": "iphone", "scale": "3x", "size": "20x20"},
-              {"filename": "AppIcon-58.png",   "idiom": "iphone", "scale": "2x", "size": "29x29"},
-              {"filename": "AppIcon-87.png",   "idiom": "iphone", "scale": "3x", "size": "29x29"},
-              {"filename": "AppIcon-80.png",   "idiom": "iphone", "scale": "2x", "size": "40x40"},
-              {"filename": "AppIcon-120.png",  "idiom": "iphone", "scale": "3x", "size": "40x40"},
-              {"filename": "AppIcon-120.png",  "idiom": "iphone", "scale": "2x", "size": "60x60"},
-              {"filename": "AppIcon-180.png",  "idiom": "iphone", "scale": "3x", "size": "60x60"},
-              {"filename": "AppIcon-1024.png", "idiom": "ios-marketing", "scale": "1x", "size": "1024x1024"}
-            ],
-            "info": {"author": "xcode", "version": 1}
-          }
-          CONTENTS_EOF
-
-          echo "=== Guncellenmis Contents.json ==="
-          cat "$APPICONSET/Contents.json"
-          echo "=== Olusturulan dosyalar ==="
-          ls -la "$APPICONSET/"
-
-      - name: Archive olustur
-        script: |
-          xcodebuild archive \
-            -project TasarrufX.xcodeproj \
-            -scheme "$XCODE_SCHEME" \
-            -configuration Release \
-            -archivePath /tmp/TasarrufX.xcarchive \
-            -destination "generic/platform=iOS"
-
-          echo "=== Archive kontrolu ==="
-          ls -la /tmp/TasarrufX.xcarchive/Products/Applications/ || true
-
-      - name: Archive icindeki plist'i duzelt
-        script: |
-          APP=$(find /tmp/TasarrufX.xcarchive/Products -name "*.app" | head -1)
-          echo "App bundle: $APP"
-          PLIST="$APP/Info.plist"
-
-          echo "=== MEVCUT INFO.PLIST ==="
-          plutil -p "$PLIST"
-
-          # CFBundleIconName garantili olarak ekle veya guncelle
-          /usr/libexec/PlistBuddy -c "Add :CFBundleIconName string AppIcon" "$PLIST" 2>/dev/null \
-            || /usr/libexec/PlistBuddy -c "Set :CFBundleIconName AppIcon" "$PLIST"
-
-          # AppIcon-60@2x.png (120x120) bundle kokune de kopyala (ek guvenlik)
-          cp "Assets.xcassets/AppIcon.appiconset/AppIcon-120.png" "$APP/AppIcon-60@2x.png"
-
-          echo "=== DUZELTME SONRASI PLIST ==="
-          plutil -p "$PLIST" | grep -iE "CFBundle|icon"
-
-          echo "=== Bundle PNG dosyalari ==="
-          ls -la "$APP"/*.png 2>/dev/null || echo "(png yok)"
-
-          echo "=== Assets.car kontrolu ==="
-          ls -la "$APP/Assets.car" 2>/dev/null && echo "Assets.car MEVCUT" || echo "UYARI: Assets.car YOK!"
-
-      - name: IPA export et (Xcode yeniden imzalar)
-        script: |
-          mkdir -p build/ios/ipa
-
-          # Kurulu provisioning profile ismini bul
-          PROFILE_NAME=""
-          for pp in ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision; do
-            security cms -D -i "$pp" > /tmp/pp_check.plist 2>/dev/null || continue
-            APPID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" /tmp/pp_check.plist 2>/dev/null || echo "")
-            if echo "$APPID" | grep -q "TasarrufX"; then
-              PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" /tmp/pp_check.plist 2>/dev/null || echo "")
-              echo "Provisioning profile bulundu: $PROFILE_NAME"
-              break
-            fi
-          done
-
-          if [ -z "$PROFILE_NAME" ]; then
-            echo "TasarrufX profili bulunamadi, ilk profili kullaniyorum..."
-            FIRST_PP=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision 2>/dev/null | head -1)
-            security cms -D -i "$FIRST_PP" > /tmp/pp_check.plist 2>/dev/null || true
-            PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" /tmp/pp_check.plist 2>/dev/null || echo "")
-            echo "Kullanilan profil: $PROFILE_NAME"
-          fi
-
-          cat > /tmp/ExportOptions.plist << EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>method</key>
-            <string>app-store-connect</string>
-            <key>signingStyle</key>
-            <string>manual</string>
-            <key>signingCertificate</key>
-            <string>Apple Distribution</string>
-            <key>provisioningProfiles</key>
-            <dict>
-              <key>com.mirfytech.TasarrufX</key>
-              <string>${PROFILE_NAME}</string>
-            </dict>
-          </dict>
-          </plist>
-          EOF
-
-          echo "=== ExportOptions.plist ==="
-          cat /tmp/ExportOptions.plist
-
-          xcodebuild -exportArchive \
-            -archivePath /tmp/TasarrufX.xcarchive \
-            -exportPath build/ios/ipa \
-            -exportOptionsPlist /tmp/ExportOptions.plist
-
-          echo "=== Export edilen IPA ==="
-          ls -la build/ios/ipa/
+          flutter build ipa --release
+          echo "=== IPA dosyalari ==="
+          ls -la build/ios/ipa/ || true
 
     artifacts:
       - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
 
     publishing:
       app_store_connect:
@@ -208,7 +109,7 @@ workflows:
         submit_to_app_store: false
 
 
-  # ── App Store'a gönder (production) ────────────────────────────────
+  # ── App Store'a gönder (production) ────────────────────────────────────────
   ios-app-store:
     name: iOS → App Store
     instance_type: mac_mini_m2
@@ -219,124 +120,50 @@ workflows:
         - ios
       vars:
         BUNDLE_ID: "com.mirfytech.TasarrufX"
-        XCODE_SCHEME: "TasarrufX"
-      xcode: "26"
+      flutter: stable
+      xcode: latest
 
     scripts:
-      - name: XcodeGen kur
-        script: brew install xcodegen
-
-      - name: Xcode projesi oluştur
-        script: xcodegen generate --spec project.yml
+      - name: Flutter iOS projesi olustur
+        script: |
+          cp -r lib /tmp/lib_backup
+          cp pubspec.yaml /tmp/pubspec_backup.yaml
+          flutter create --platforms ios --org com.mirfytech \
+            --project-name tasarruf_x --ios-language swift --no-pub .
+          rm -rf lib && cp -r /tmp/lib_backup lib
+          cp /tmp/pubspec_backup.yaml pubspec.yaml
+          CREATED_ID=$(grep "PRODUCT_BUNDLE_IDENTIFIER" ios/Runner.xcodeproj/project.pbxproj \
+            | grep -v "TEST" | head -1 | grep -oE 'com\.[a-zA-Z0-9._-]+' | head -1)
+          if [ -n "$CREATED_ID" ]; then
+            sed -i '' "s/${CREATED_ID}/com.mirfytech.TasarrufX/g" ios/Runner.xcodeproj/project.pbxproj
+          fi
 
       - name: Keychain başlat
         script: keychain initialize
 
-      - name: Sertifika ve profil oluştur
+      - name: Sertifika ve profil olustur
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --platform IOS \
-            --type IOS_APP_STORE \
-            --certificate-key @env:CERTIFICATE_PRIVATE_KEY \
-            --create
+            --platform IOS --type IOS_APP_STORE \
+            --certificate-key @env:CERTIFICATE_PRIVATE_KEY --create
 
-      - name: Sertifikaları keychain'e ekle
+      - name: Sertifikalari keychain'e ekle
         script: keychain add-certificates
+
+      - name: Flutter pub get
+        script: flutter pub get
+
+      - name: Ikon olustur
+        script: dart run flutter_launcher_icons
 
       - name: Xcode imzalama profilini ayarla
         script: xcode-project use-profiles
 
-      - name: Ikon boyutlarini olustur
-        script: |
-          ICON_SRC="Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png"
-          APPICONSET="Assets.xcassets/AppIcon.appiconset"
-          sips -z 40  40  "$ICON_SRC" --out "$APPICONSET/AppIcon-40.png"
-          sips -z 58  58  "$ICON_SRC" --out "$APPICONSET/AppIcon-58.png"
-          sips -z 60  60  "$ICON_SRC" --out "$APPICONSET/AppIcon-60.png"
-          sips -z 80  80  "$ICON_SRC" --out "$APPICONSET/AppIcon-80.png"
-          sips -z 87  87  "$ICON_SRC" --out "$APPICONSET/AppIcon-87.png"
-          sips -z 120 120 "$ICON_SRC" --out "$APPICONSET/AppIcon-120.png"
-          sips -z 180 180 "$ICON_SRC" --out "$APPICONSET/AppIcon-180.png"
-          cat > "$APPICONSET/Contents.json" << 'CONTENTS_EOF'
-          {
-            "images": [
-              {"filename": "AppIcon-40.png",   "idiom": "iphone", "scale": "2x", "size": "20x20"},
-              {"filename": "AppIcon-60.png",   "idiom": "iphone", "scale": "3x", "size": "20x20"},
-              {"filename": "AppIcon-58.png",   "idiom": "iphone", "scale": "2x", "size": "29x29"},
-              {"filename": "AppIcon-87.png",   "idiom": "iphone", "scale": "3x", "size": "29x29"},
-              {"filename": "AppIcon-80.png",   "idiom": "iphone", "scale": "2x", "size": "40x40"},
-              {"filename": "AppIcon-120.png",  "idiom": "iphone", "scale": "3x", "size": "40x40"},
-              {"filename": "AppIcon-120.png",  "idiom": "iphone", "scale": "2x", "size": "60x60"},
-              {"filename": "AppIcon-180.png",  "idiom": "iphone", "scale": "3x", "size": "60x60"},
-              {"filename": "AppIcon-1024.png", "idiom": "ios-marketing", "scale": "1x", "size": "1024x1024"}
-            ],
-            "info": {"author": "xcode", "version": 1}
-          }
-          CONTENTS_EOF
-
-      - name: Archive olustur
-        script: |
-          xcodebuild archive \
-            -project TasarrufX.xcodeproj \
-            -scheme "$XCODE_SCHEME" \
-            -configuration Release \
-            -archivePath /tmp/TasarrufX.xcarchive \
-            -destination "generic/platform=iOS"
-
-      - name: Archive icindeki plist ve ikonu duzelt
-        script: |
-          APP=$(find /tmp/TasarrufX.xcarchive/Products -name "*.app" | head -1)
-          PLIST="$APP/Info.plist"
-          /usr/libexec/PlistBuddy -c "Add :CFBundleIconName string AppIcon" "$PLIST" 2>/dev/null \
-            || /usr/libexec/PlistBuddy -c "Set :CFBundleIconName AppIcon" "$PLIST"
-          cp Assets.xcassets/AppIcon.appiconset/AppIcon-120.png "$APP/AppIcon-60@2x.png"
-
-      - name: IPA export et
-        script: |
-          mkdir -p build/ios/ipa
-          PROFILE_NAME=""
-          for pp in ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision; do
-            security cms -D -i "$pp" > /tmp/pp_check.plist 2>/dev/null || continue
-            APPID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" /tmp/pp_check.plist 2>/dev/null || echo "")
-            if echo "$APPID" | grep -q "TasarrufX"; then
-              PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" /tmp/pp_check.plist 2>/dev/null || echo "")
-              break
-            fi
-          done
-          if [ -z "$PROFILE_NAME" ]; then
-            FIRST_PP=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision 2>/dev/null | head -1)
-            security cms -D -i "$FIRST_PP" > /tmp/pp_check.plist 2>/dev/null || true
-            PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" /tmp/pp_check.plist 2>/dev/null || echo "")
-          fi
-          cat > /tmp/ExportOptions.plist << EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>method</key>
-            <string>app-store-connect</string>
-            <key>signingStyle</key>
-            <string>manual</string>
-            <key>signingCertificate</key>
-            <string>Apple Distribution</string>
-            <key>provisioningProfiles</key>
-            <dict>
-              <key>com.mirfytech.TasarrufX</key>
-              <string>${PROFILE_NAME}</string>
-            </dict>
-          </dict>
-          </plist>
-          EOF
-          xcodebuild -exportArchive \
-            -archivePath /tmp/TasarrufX.xcarchive \
-            -exportPath build/ios/ipa \
-            -exportOptionsPlist /tmp/ExportOptions.plist
-          ls -la build/ios/ipa/
+      - name: Flutter build IPA
+        script: flutter build ipa --release
 
     artifacts:
       - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
 
     publishing:
       app_store_connect:

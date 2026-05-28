@@ -1,4 +1,17 @@
-# Xcode
+# ─── Flutter ─────────────────────────────────────────────────────────────────
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+flutter_export_environment.sh
+.pub-cache/
+.pub/
+
+# Flutter iOS (Codemagic'te flutter create ile otomatik oluşturulur)
+ios/
+
+# ─── Xcode ───────────────────────────────────────────────────────────────────
 *.xcodeproj/xcuserdata/
 *.xcodeproj/project.xcworkspace/xcshareddata/
 *.xcworkspace/xcuserdata/
@@ -7,38 +20,23 @@ DerivedData/
 *.mode1v3
 *.mode2v3
 *.perspectivev3
-!default.pbxuser
-!default.mode1v3
-!default.mode2v3
-!default.perspectivev3
 
-# XcodeGen (proje dosyası Codemagic'te üretilir)
+# XcodeGen (artık kullanılmıyor)
+TasarrufX.xcodeproj/
 CompoundGrowth.xcodeproj/
 
-# Build
-build/
+# ─── Build ───────────────────────────────────────────────────────────────────
 *.ipa
 *.dSYM.zip
 *.dSYM
 
-# CocoaPods
-Pods/
-Podfile.lock
-
-# Swift Package Manager
-.build/
-*.resolved
-
-# macOS
+# ─── macOS ───────────────────────────────────────────────────────────────────
 .DS_Store
 .AppleDouble
 .LSOverride
-Thumbs.db
 
-# Codemagic environment
-.env
-
-# Private keys (never commit!)
+# ─── Private Keys ────────────────────────────────────────────────────────────
 *.key
 *.p8
 *.p12
+.env
