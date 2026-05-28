@@ -81,10 +81,15 @@ workflows:
 
       - name: Flutter build IPA
         script: |
-          BUILD_NUM=$(app-store-connect get-latest-testflight-build-number \
-            "$BUNDLE_ID" 2>/dev/null || echo "0")
+          # Build numarasini belirle — hata durumunda 0 fallback
+          RAW=$(app-store-connect get-latest-testflight-build-number \
+            "$BUNDLE_ID" 2>/dev/null || true)
+          # Yalnızca rakamları al, bos veya non-numeric cikti durumunu ele al
+          BUILD_NUM=$(echo "$RAW" | grep -oE '[0-9]+' | tail -1 || echo "")
+          BUILD_NUM=${BUILD_NUM:-0}
           NEXT=$((BUILD_NUM + 1))
-          echo "Build numarasi: $NEXT"
+          echo "Son TestFlight build: ${BUILD_NUM}, yeni build: ${NEXT}"
+
           flutter build ipa --release --build-number=$NEXT
           echo "=== IPA dosyalari ==="
           ls -la build/ios/ipa/ || true
