@@ -91,6 +91,13 @@ workflows:
       - name: Xcode imzalama profilini ayarla
         script: xcode-project use-profiles
 
+      - name: CocoaPods surumunu duzenle
+        script: |
+          # CocoaPods 1.16.x Molinillo resolver hatasina karsi 1.15.2 kullan
+          gem install cocoapods -v '1.15.2' --no-document
+          gem uninstall cocoapods -v '1.16.2' --force 2>/dev/null || true
+          pod --version
+
       - name: Flutter build IPA
         script: |
           # Build numarasini belirle — hata durumunda 0 fallback
@@ -177,6 +184,13 @@ workflows:
 
       - name: Xcode imzalama profilini ayarla
         script: xcode-project use-profiles
+
+      - name: CocoaPods surumunu duzenle
+        script: |
+          # CocoaPods 1.16.x Molinillo resolver hatasina karsi 1.15.2 kullan
+          gem install cocoapods -v '1.15.2' --no-document
+          gem uninstall cocoapods -v '1.16.2' --force 2>/dev/null || true
+          pod --version
 
       - name: Flutter build IPA
         script: flutter build ipa --release
