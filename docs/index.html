@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TasarrufX – Destek</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #F2F2F7;
+      color: #1C1C1E;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #fff;
+      border-bottom: 1px solid #E5E5EA;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(135deg, #30D158, #25A244);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+    }
+
+    header h1 { font-size: 22px; font-weight: 700; }
+    header p  { font-size: 13px; color: #8E8E93; margin-top: 2px; }
+
+    main {
+      max-width: 720px;
+      margin: 32px auto;
+      padding: 0 16px 60px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 18px;
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+
+    .card h2 {
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 14px;
+      color: #1C1C1E;
+    }
+
+    .card p, .card li {
+      font-size: 15px;
+      line-height: 1.65;
+      color: #3A3A3C;
+    }
+
+    .card ul { padding-left: 20px; }
+    .card ul li { margin-bottom: 6px; }
+
+    .faq-item { margin-bottom: 20px; }
+    .faq-item h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1C1C1E;
+      margin-bottom: 6px;
+    }
+
+    .contact-link {
+      display: inline-block;
+      margin-top: 12px;
+      background: #30D158;
+      color: #fff;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .contact-link:hover { background: #25A244; }
+
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: #AEAEB2;
+      padding: 24px 0;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">💰</div>
+  <div>
+    <h1>TasarrufX</h1>
+    <p>Kişisel Finans &amp; Bileşik Faiz</p>
+  </div>
+</header>
+
+<main>
+
+  <!-- Uygulama Hakkında -->
+  <div class="card">
+    <h2>Uygulama Hakkında</h2>
+    <p>
+      TasarrufX; bileşik faiz simülatörü, varlık takibi ve bütçe yönetimi
+      özelliklerini bir arada sunan kişisel finans uygulamasıdır.
+      Tüm veriler yalnızca cihazınızda saklanır — hesap açmaya veya
+      internet bağlantısına gerek yoktur.
+    </p>
+  </div>
+
+  <!-- Özellikler -->
+  <div class="card">
+    <h2>Özellikler</h2>
+    <ul>
+      <li>Bileşik faiz simülatörü (grafik &amp; kilometre taşları)</li>
+      <li>Varlık takibi — nakit, kripto, hisse, altın, gayrimenkul ve daha fazlası</li>
+      <li>Bütçe ve gider yönetimi</li>
+      <li>Finansal hedef belirleme</li>
+      <li>Günlük motivasyon alıntıları</li>
+    </ul>
+  </div>
+
+  <!-- SSS -->
+  <div class="card">
+    <h2>Sık Sorulan Sorular</h2>
+
+    <div class="faq-item">
+      <h3>Verilerim nerede saklanıyor?</h3>
+      <p>Tüm veriler yalnızca cihazınızda, yerel SQLite veritabanında saklanır.
+         Hiçbir veri sunucuya gönderilmez.</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Uygulama ücretsiz mi?</h3>
+      <p>Evet, TasarrufX ücretsiz olarak indirilebilir. Uygulama içi reklamlar
+         uygulamanın sürdürülebilirliğini sağlar.</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Verilerimi sildim, geri alabilir miyim?</h3>
+      <p>Veriler yalnızca cihazınızda tutulduğundan, "Tüm Verileri Sil"
+         işlemi geri alınamaz. Lütfen bu işlemi dikkatli kullanın.</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Simülatör sonuçları yatırım tavsiyesi midir?</h3>
+      <p>Hayır. Simülatör yalnızca eğitim amaçlıdır ve finansal danışmanlık
+         hizmeti sunmaz.</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Reklam görüntülemek istemiyorum, ne yapabilirim?</h3>
+      <p>Reklamlar uygulamanın geliştirilmesini destekler. Şu an reklamsız
+         bir seçenek sunulmamaktadır.</p>
+    </div>
+  </div>
+
+  <!-- İletişim -->
+  <div class="card">
+    <h2>Destek &amp; İletişim</h2>
+    <p>Bir sorunla karşılaştıysanız veya öneriniz varsa bize yazın:</p>
+    <a class="contact-link" href="mailto:mirfytech@gmail.com">mirfytech@gmail.com</a>
+  </div>
+
+</main>
+
+<footer>
+  &copy; 2025 MirfyTech &mdash; TasarrufX
+</footer>
+
+</body>
+</html>
