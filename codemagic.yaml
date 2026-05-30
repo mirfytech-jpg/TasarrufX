@@ -193,7 +193,13 @@ workflows:
           pod --version
 
       - name: Flutter build IPA
-        script: flutter build ipa --release
+        script: |
+          RAW=$(app-store-connect get-latest-testflight-build-number             "$BUNDLE_ID" 2>/dev/null || true)
+          BUILD_NUM=$(echo "$RAW" | grep -oE '[0-9]+' | tail -1 || echo "")
+          BUILD_NUM=${BUILD_NUM:-9}
+          NEXT=$((BUILD_NUM + 1))
+          echo "Son build: ${BUILD_NUM}, yeni build: ${NEXT}"
+          flutter build ipa --release --build-number=$NEXT
 
     artifacts:
       - build/ios/ipa/*.ipa
