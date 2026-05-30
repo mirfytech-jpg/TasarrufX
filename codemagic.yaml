@@ -66,9 +66,6 @@ workflows:
           /usr/libexec/PlistBuddy \
             -c "Set :GADApplicationIdentifier ca-app-pub-4055315573310307~8843002768" \
             ios/Runner/Info.plist
-          /usr/libexec/PlistBuddy \
-            -c "Add :NSUserTrackingUsageDescription string Reklam deneyimini kisisellestirebilmek icin kullanilir." \
-            ios/Runner/Info.plist 2>/dev/null || true
           echo "GADApplicationIdentifier eklendi."
 
       - name: Keychain başlat
@@ -166,9 +163,6 @@ workflows:
           /usr/libexec/PlistBuddy \
             -c "Set :GADApplicationIdentifier ca-app-pub-4055315573310307~8843002768" \
             ios/Runner/Info.plist
-          /usr/libexec/PlistBuddy \
-            -c "Add :NSUserTrackingUsageDescription string Reklam deneyimini kisisellestirebilmek icin kullanilir." \
-            ios/Runner/Info.plist 2>/dev/null || true
 
       - name: Keychain başlat
         script: keychain initialize
